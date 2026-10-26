@@ -1,11 +1,11 @@
 rules_version = '2';
-// Mẫu quy tắc bảo mật Firestore: chỉ tài khoản có email trong danh sách mới đọc/ghi được.
-// Thay email bên dưới bằng email của cán bộ tổng hợp, rồi dán vào Firebase Console → Firestore → Rules.
+// Quy tắc bảo mật Firestore: chỉ các tài khoản có email trong danh sách mới đọc/ghi được.
+// Dán toàn bộ nội dung này vào Firebase Console → Firestore Database → Rules → Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
       allow read, write: if request.auth != null
-        && request.auth.token.email in ['canbo@example.com'];
+        && request.auth.token.email in ['trangngoc59@gmail.com', 'qtrang008@gmail.com'];
     }
   }
 }

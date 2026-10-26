@@ -22,6 +22,15 @@ window.__STANDALONE = true;
     };
   })();
   window.__IDB = IDB;
+  const SEED_URL = "du-lieu/2026.json";
+  window.__loadSeed = async (onlyMissing = true) => {
+    const r = await fetch(SEED_URL, { cache:"no-store" }); if (!r.ok) throw new Error("Không tải được tệp số liệu ban đầu (" + r.status + ").");
+    const j = await r.json(); if (!j || !j.kv) throw new Error("Tệp số liệu ban đầu không đúng dạng.");
+    const have = onlyMissing ? await IDB.all() : {}; const add = {};
+    for (const [k, v] of Object.entries(j.kv)) if (!(k in have)) add[k] = v;
+    await IDB.putAll(add); return Object.keys(add).length;
+  };
+  const seedReady = (async () => { try { const all = await IDB.all(); if (!Object.keys(all).length && location.protocol.startsWith("http")) { const n = await window.__loadSeed(true); if (n) window.__SEEDED = n; } } catch(e){} })();
   const cp = v => v == null ? v : JSON.parse(JSON.stringify(v));
   const snap = (id, v) => ({ id, exists: v != null, data: () => v == null ? undefined : cp(v), metadata:{ fromCache:false, hasPendingWrites:false } });
   function mkDoc(path){
@@ -90,7 +99,7 @@ window.__STANDALONE = true;
   };
   sample.limits = async () => ({ maxPromptBytes: 262144, images:{ maxCount:5, maxInputBytes:20e6, mediaTypes:["image/jpeg","image/png","image/webp","image/gif"] }, tools:{ maxCount:0 } });
   const user = { isOwner: async () => true, canEdit: async () => true, can: async () => true, id: async () => "local", me: async () => ({ id:"local", name:"" }) };
-  window.claude = { use: async name => name === "db" ? db : name === "downloads" ? downloads : name === "user" ? user : name === "sample" ? (getKey() ? sample : null) : null };
+  window.claude = { use: async name => name === "db" ? (await seedReady, db) : name === "downloads" ? downloads : name === "user" ? user : name === "sample" ? (getKey() ? sample : null) : null };
 })();
 </script>
 </head>
@@ -1820,7 +1829,7 @@ function viewHome(){
   const D = homeData(), c = D.cum, y = D.y, s = S.settings;
   const head = `<div class="row between"><div><div class="eyebrow">${esc(s.donViBieu || "Trạm Y tế")} · Năm ${y}</div><h1>Tổng quan công tác dân số</h1></div>
     <div class="row"><button class="btn" data-act="nav" data-v="phieu">Nhập phiếu CTV</button><button class="btn" data-act="nav" data-v="diaban">Xuất theo địa bàn</button><button class="btn primary" data-act="home-newrep">Tạo kỳ báo cáo</button></div></div>`;
-  if (!c) return head + `<div class="panel empty"><b>Chưa có số liệu năm ${y}</b><span>Nhập Biểu 01-DSX đã báo cáo ở mục Số liệu đã báo cáo, hoặc tải phiếu thu tin của cộng tác viên.</span><div class="row" style="justify-content:center"><button class="btn primary" data-act="nav" data-v="solieu">Nhập số liệu đã báo cáo</button><button class="btn" data-act="nav" data-v="phieu">Tải phiếu CTV</button></div></div>`;
+  if (!c) return head + `<div class="panel empty"><b>Chưa có số liệu năm ${y}</b><span>Nhập Biểu 01-DSX đã báo cáo ở mục Số liệu đã báo cáo, hoặc tải phiếu thu tin của cộng tác viên.</span><div class="row" style="justify-content:center">${window.__STANDALONE ? `<button class="btn primary" data-act="sa-seed">Nạp số liệu năm 2026</button>` : ""}<button class="btn ${window.__STANDALONE ? "" : "primary"}" data-act="nav" data-v="solieu">Nhập số liệu đã báo cáo</button><button class="btn" data-act="nav" data-v="phieu">Tải phiếu CTV</button></div></div>`;
   const kyTxt = D.lastM === 1 ? `tháng 01/${y}` : `tháng 01–${pad2(D.lastM)}/${y}`;
   const srb = c.sinh_nu ? fmtNum(c.sinh_nam / c.sinh_nu * 100, 1) : "—", p3 = c.sinh_tong ? fmtNum(c.sinh_con3 / c.sinh_tong * 100, 1) : "—";
   const vp = D.ctVong ? Math.min(100, c.vong_moi / D.ctVong * 100) : null;
@@ -2685,7 +2694,8 @@ function saPanel(){
   let key = "", m1 = "", m2 = ""; try { key = localStorage.getItem("ths_api_key") || ""; m1 = localStorage.getItem("ths_model") || ""; m2 = localStorage.getItem("ths_model_complex") || ""; } catch(e){}
   return `<div class="panel stack"><h2>Dữ liệu trên máy này</h2>
       <p class="small muted" style="margin:0">Bản trên GitHub lưu toàn bộ số liệu trong trình duyệt của máy đang dùng. Hãy sao lưu định kỳ ra tệp và cất giữ cẩn thận; muốn dùng trên máy khác thì khôi phục từ tệp sao lưu. Không đưa tệp sao lưu lên GitHub vì có thể chứa họ tên, số CCCD.</p>
-      <div class="row"><button class="btn" data-act="sa-export">Tải tệp sao lưu</button><label class="btn" for="sa-file">Khôi phục từ tệp…</label><input type="file" id="sa-file" accept=".json" hidden></div></div>
+      <div class="row"><button class="btn" data-act="sa-export">Tải tệp sao lưu</button><label class="btn" for="sa-file">Khôi phục từ tệp…</label><input type="file" id="sa-file" accept=".json" hidden><button class="btn" data-act="sa-seed">Nạp số liệu năm 2026</button></div>
+      <p class="small muted" style="margin:0">"Nạp số liệu năm 2026" thêm biểu mẫu, số liệu Biểu 01-DSX tháng 1–9, chỉ tiêu giao và danh sách địa bàn có sẵn trên trang; mục nào máy này đã có thì giữ nguyên.</p></div>
     <div class="panel stack"><h2>Kết nối Claude để đọc ảnh, Word và soạn báo cáo</h2>
       <p class="small muted" style="margin:0">Nhập khóa API Anthropic (tạo tại console.anthropic.com, tính phí theo lượt dùng). Khóa chỉ lưu trong trình duyệt máy này. Không có khóa thì vẫn dùng được nhập tay phiếu, đọc Excel đúng mẫu, tổng hợp và xuất Word/Excel.</p>
       <div class="grid3"><div class="field" style="grid-column:span 3"><label for="sa-key">Khóa API</label><input class="inp" id="sa-key" type="password" autocomplete="off" value="${esc(key)}" placeholder="sk-ant-…"></div>
@@ -2818,6 +2828,7 @@ document.addEventListener("click", async e => {
     case "mvrow": case "mvcol": { readTplForm(); const arr = act==="mvrow" ? tplDraft.rows : tplDraft.cols, i = +b.dataset.i, k = i + (+b.dataset.d); if (k>=0 && k<arr.length) { [arr[i],arr[k]] = [arr[k],arr[i]]; render(); } break; }
     case "sa-export": { const all = await window.__IDB.all(); const d = new Date(); await saveFile(`Sao luu tong hop dan so ${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`, JSON.stringify({ app:"tong-hop-dan-so", version:1, exportedAt:d.toISOString(), kv:all })); break; }
     case "sa-savekey": try { const v = id => $(id).value.trim(); v("#sa-key") ? localStorage.setItem("ths_api_key", v("#sa-key")) : localStorage.removeItem("ths_api_key"); v("#sa-m1") ? localStorage.setItem("ths_model", v("#sa-m1")) : localStorage.removeItem("ths_model"); v("#sa-m2") ? localStorage.setItem("ths_model_complex", v("#sa-m2")) : localStorage.removeItem("ths_model_complex"); } catch(e){ toast("Trình duyệt không cho lưu cài đặt.", true); break; } location.reload(); break;
+    case "sa-seed": try { const n = await window.__loadSeed(true); toast(n ? `Đã nạp ${n} mục. Đang tải lại…` : "Máy này đã có đủ số liệu ban đầu."); if (n) setTimeout(() => location.reload(), 600); } catch(err){ toast(err.message, true); } break;
     case "sa-clearkey": try { localStorage.removeItem("ths_api_key"); } catch(e){} location.reload(); break;
     case "savesettings": readSettingsForm(); await store.putSettings(); setNav(); toast("Đã lưu thông tin cơ quan."); break;
     case "db-add": readSettingsForm(); S.settings.diaBan = [...(S.settings.diaBan||[]), { ten:"", thon:"" }]; render(); $$("[data-db-name]").pop()?.focus(); break;
@@ -2857,6 +2868,7 @@ document.addEventListener("keydown", e => {
   $("#st-ai").innerHTML = window.__STANDALONE && !sample ? `<span class="dot off"></span>Chưa kết nối Claude (nhập khóa API ở Thông tin cơ quan)` : sample ? `<span class="dot"></span>Trợ lý đọc tệp sẵn sàng${cap.images?"":" (không đọc ảnh)"}` : `<span class="dot off"></span>Trợ lý đọc tệp chưa sẵn sàng`;
   try { await store.loadAll(); await store.loadYear(S.pY); } catch(e){ toast("Không tải được dữ liệu đã lưu: " + (e && e.message || e.code || ""), true); }
   S.view = "home"; bindTips();
+  if (window.__SEEDED) setTimeout(() => toast("Đã nạp sẵn số liệu năm 2026 vào máy này."), 400);
   S.loaded = true; render();
 })();
 </script>

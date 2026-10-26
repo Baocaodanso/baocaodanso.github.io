@@ -316,6 +316,38 @@ table.g td.v.sum input{background:var(--sum)}
 table.g td.v.auto input{background:var(--auto);color:var(--auto-ink);font-weight:600}
 table.g td.v.f{background:var(--calc);text-align:right;padding:7px 10px;color:var(--muted);font-weight:500}
 table.g td.v.hl{animation:hl 1.6s ease-out}
+.navsub{display:none;flex-direction:column;gap:1px;margin:0 0 4px 22px;border-left:1px solid var(--side-2,var(--line))}
+.navsub.open{display:flex}
+.nav .navsub button{font-size:12.5px;padding:6px 10px 6px 14px;opacity:.8}
+.hubbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hubbar button{all:unset;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.hubbar button b{font-size:14px;color:var(--ink)}
+.hubbar button span{font-size:12px;color:var(--muted);line-height:1.35}
+.hubbar button:hover{border-color:var(--accent)}
+.hubbar button[aria-selected="true"]{border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent);background:var(--accent-soft)}
+.hubbar button[aria-selected="true"] b{color:var(--accent)}
+.hubbar button:focus-visible{outline:2px solid var(--accent)}
+.ttgrid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;align-items:start}
+.ttlist{display:flex;flex-direction:column;gap:2px;max-height:60vh;overflow:auto}
+.ttli{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:8px 10px;border-radius:6px}
+.ttli b{font-size:13px;font-weight:600}
+.ttli:hover{background:var(--surface-2)}
+.ttli.on{background:var(--accent-soft)}
+.ttli.on b{color:var(--accent)}
+.ttopt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.ttopt > span{display:flex;flex-direction:column}
+.ttopt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.ttsw{all:unset;cursor:pointer;width:64px;height:40px;border-radius:7px;display:flex;align-items:flex-end;padding:3px 5px;box-sizing:border-box;box-shadow:0 0 0 1px var(--line)}
+.ttsw span{font-size:10px;color:#fff;font-weight:600;line-height:1.1}
+.ttsw.on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent)}
+.ttcvw{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px}
+.ttcvw canvas{display:block;width:100%;height:auto;max-height:560px;object-fit:contain;border-radius:4px}
+.ttsl{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start}
+.ttth{aspect-ratio:16/9;background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative;color:#1f2d36;font-family:Arial,sans-serif}
+.ttth-h{background:var(--a);color:#fff;font-weight:700;font-size:11px;padding:6px 8px;border-bottom:2px solid var(--acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttth ul{margin:6px 0 0;padding:0 8px 0 20px;font-size:8.5px;line-height:1.35}
+.ttth-n{position:absolute;right:6px;bottom:4px;font-size:8px;color:#7a8a96}
+@media (max-width:1080px){.ttgrid,.ttsl{grid-template-columns:minmax(0,1fr)}.hubbar{grid-template-columns:minmax(0,1fr)}.hubbar button span{display:none}}
 .ckl{display:flex;flex-direction:column}
 .cki{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
 .cki:first-child{border-top:0;padding-top:2px}
@@ -512,15 +544,18 @@ table.g tr.hd td{background:var(--surface-2)}
     <div class="brand"><div class="seal">TYT</div><div><b id="brand-name">Trạm Y tế xã Lệ Thuỷ</b><small id="brand-sub">Tổng hợp báo cáo dân số</small></div></div>
     <nav class="nav" id="nav">
       <button data-act="nav" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Tổng quan</span></button>
-      <div class="grp">Nhập số liệu</div>
-      <button data-act="nav" data-v="phieu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Phiếu thu tin CTV</span><span class="count" id="n-ph"></span></button>
-      <button data-act="nav" data-v="solieu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/></svg><span>Số liệu đã báo cáo</span><span class="count" id="n-sl"></span></button>
-      <div class="grp">Tổng hợp, báo cáo</div>
-      <button data-act="nav" data-v="diaban"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Số liệu theo địa bàn</span></button>
-      <button data-act="nav" data-v="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Kỳ báo cáo</span><span class="count" id="n-rep"></span></button>
-      <div class="grp">Cấu hình</div>
+      <div class="grp">Báo cáo</div>
+      <button data-act="nav" data-v="phieu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Phiếu thu thập</span><span class="count" id="n-ph"></span></button>
+      <button data-act="nav" data-v="hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Số liệu báo cáo</span><span class="count" id="n-rep"></span></button>
+      <div class="navsub" id="navsub">
+        <button data-act="nav" data-v="reports" data-sub="1"><span>Kỳ báo cáo, xuất Excel/Word</span></button>
+        <button data-act="nav" data-v="diaban" data-sub="1"><span>Theo địa bàn, kỳ tùy chỉnh</span></button>
+        <button data-act="nav" data-v="solieu" data-sub="1"><span>Đã gửi cấp trên, đối chiếu</span><span class="count" id="n-sl"></span></button>
+      </div>
       <button data-act="nav" data-v="templates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Biểu mẫu</span><span class="count" id="n-tpl"></span></button>
       <button data-act="nav" data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Thông tin cơ quan</span></button>
+      <div class="grp">Tuyên truyền</div>
+      <button data-act="nav" data-v="tuyentruyen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4a1 1 0 0 0 1 1h3l6 4V5L7 9H4a1 1 0 0 0-1 1z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span>Banner, tài liệu, trình bày</span><span class="count" id="n-tt"></span></button>
     </nav>
     <div class="side-foot">
       <div id="st-db"><span class="dot off"></span>Đang kết nối lưu trữ…</div>
@@ -625,6 +660,7 @@ const LIBS = {
   XLSX: ["https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js","https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"],
   mammoth: ["https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js","https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js","https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"],
   docx: ["https://unpkg.com/docx@7.8.2/build/index.js","https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"],
+  PptxGenJS: ["https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js","https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"],
   ExcelJS: ["https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js","https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"]
 };
 const libLoading = {};
@@ -1012,13 +1048,503 @@ function progress(rep){
   return tot ? Math.round(filled/tot*100) : 0;
 }
 
+/* ---------- Thư viện chủ đề tuyên truyền dân số (dùng khi chưa có trợ lý Claude) ---------- */
+const TT_LIB = [
+  { k:"sinhdu2", ten:"Sinh đủ hai con, nuôi dạy con tốt", re:/sinh du (2|hai) con|muc sinh|duy tri muc sinh|sinh it|khuyen khich sinh/,
+    khauHieu:["Mỗi gia đình sinh đủ hai con, nuôi dạy con tốt","Sinh đủ hai con, gia đình hạnh phúc, xã hội phát triển","Duy trì mức sinh thay thế vì tương lai đất nước","Sinh con đúng độ tuổi, mẹ khỏe, con thông minh","Hai con: đủ niềm vui, đủ điều kiện chăm sóc"],
+    phuDe:"Duy trì vững chắc mức sinh thay thế, nâng cao chất lượng dân số",
+    phan:[
+      { tieuDe:"Vì sao cần sinh đủ hai con", body:"Mức sinh thay thế là mức sinh bình quân khoảng 2,1 con trên một phụ nữ, đủ để thế hệ sau thay thế thế hệ trước. Khi mức sinh xuống thấp kéo dài, dân số sẽ già nhanh, thiếu lực lượng lao động và gánh nặng chăm sóc người cao tuổi tăng lên.\n- Ở nhiều địa phương, mức sinh đã xuống dưới mức sinh thay thế.\n- Mỗi gia đình sinh đủ hai con góp phần duy trì cơ cấu dân số hợp lý.\n- Hai con là quy mô giúp cha mẹ có điều kiện chăm sóc, nuôi dạy con tốt." },
+      { tieuDe:"Sinh con đúng độ tuổi và khoảng cách hợp lý", body:"Độ tuổi sinh con phù hợp của phụ nữ thường là từ 22 đến 35 tuổi. Sinh con quá sớm hoặc quá muộn đều tăng nguy cơ cho sức khỏe bà mẹ và trẻ em.\n- Không tảo hôn, không mang thai ở tuổi vị thành niên.\n- Khoảng cách giữa hai lần sinh nên từ 3 đến 5 năm để mẹ hồi phục sức khỏe.\n- Khám thai định kỳ và sinh con tại cơ sở y tế." },
+      { tieuDe:"Nuôi dạy con tốt", body:"Sinh đủ hai con đi đôi với nuôi dạy con khỏe mạnh, ngoan ngoãn, học tập tốt.\n- Cho trẻ bú mẹ hoàn toàn trong 6 tháng đầu, tiêm chủng đầy đủ, theo dõi tăng trưởng.\n- Dành thời gian trò chuyện, chơi cùng con; cha và mẹ cùng chia sẻ việc chăm sóc.\n- Không phân biệt đối xử giữa con trai và con gái." },
+      { tieuDe:"Vai trò của gia đình và cộng đồng", body:"Mỗi gia đình là một tế bào của xã hội. Cha mẹ, ông bà, dòng họ và đoàn thể cùng ủng hộ các cặp vợ chồng sinh đủ hai con, nuôi dạy con tốt.\n- Cộng tác viên dân số thăm hộ, tư vấn và cung cấp thông tin đúng.\n- Các đoàn thể lồng ghép nội dung dân số vào sinh hoạt thường kỳ.\n- Người có uy tín trong cộng đồng làm gương, vận động bà con thực hiện." }],
+    cauHoi:[{ hoi:"Mức sinh thay thế là bao nhiêu con trên một phụ nữ?", dapAn:"Khoảng 2,1 con trên một phụ nữ." },{ hoi:"Khoảng cách hợp lý giữa hai lần sinh là bao lâu?", dapAn:"Từ 3 đến 5 năm." },{ hoi:"Nêu ba việc cha mẹ cần làm để nuôi dạy con tốt.", dapAn:"Cho bú mẹ hoàn toàn 6 tháng đầu, tiêm chủng đầy đủ, dành thời gian trò chuyện và chăm sóc con; không phân biệt con trai, con gái." }] },
+  { k:"mcbgt", ten:"Giảm thiểu mất cân bằng giới tính khi sinh", re:/can bang gioi tinh|gioi tinh khi sinh|lua chon gioi tinh|trong nam khinh nu|ty so gioi tinh/,
+    khauHieu:["Con trai hay con gái đều là con","Không lựa chọn giới tính thai nhi dưới mọi hình thức","Bình đẳng giới hôm nay, hạnh phúc gia đình mai sau","Trọng nam khinh nữ là lạc hậu","Sinh con trai hay con gái là do tạo hóa, hãy trân trọng"],
+    phuDe:"Giảm thiểu mất cân bằng giới tính khi sinh, xây dựng gia đình bình đẳng, hạnh phúc",
+    phan:[
+      { tieuDe:"Thế nào là mất cân bằng giới tính khi sinh", body:"Trong tự nhiên, cứ khoảng 100 bé gái được sinh ra thì có khoảng 104 đến 106 bé trai. Khi số bé trai sinh ra cao hơn nhiều so với mức này, đó là tình trạng mất cân bằng giới tính khi sinh.\n- Nguyên nhân sâu xa là tâm lý trọng nam khinh nữ, muốn có con trai nối dõi.\n- Nguyên nhân trực tiếp là việc lựa chọn giới tính thai nhi.\n- Mức sinh giảm làm áp lực phải có con trai càng lớn hơn ở một số gia đình." },
+      { tieuDe:"Hậu quả", body:"Mất cân bằng giới tính khi sinh để lại hậu quả lâu dài cho gia đình và xã hội.\n- Thừa nam giới trong độ tuổi kết hôn, nhiều nam giới khó lấy vợ.\n- Gia tăng nguy cơ buôn bán phụ nữ, trẻ em gái, bạo lực giới.\n- Ảnh hưởng đến cơ cấu dân số, lao động và trật tự xã hội." },
+      { tieuDe:"Quy định của pháp luật", body:"Pháp luật nghiêm cấm việc lựa chọn giới tính thai nhi dưới mọi hình thức.\n- Không được tuyên truyền, phổ biến phương pháp tạo giới tính thai nhi.\n- Không được chẩn đoán, tiết lộ giới tính thai nhi để lựa chọn.\n- Không được loại bỏ thai nhi vì lý do lựa chọn giới tính.\n- Hành vi vi phạm bị xử phạt theo quy định về xử phạt vi phạm hành chính trong lĩnh vực y tế." },
+      { tieuDe:"Mỗi người cần làm gì", body:"Thay đổi nhận thức là giải pháp gốc rễ.\n- Coi trọng con gái như con trai; con gái cũng thờ cúng, phụng dưỡng cha mẹ.\n- Không tìm hiểu, không tiết lộ giới tính thai nhi.\n- Phát hiện và báo cho chính quyền, cơ sở y tế khi thấy hành vi vi phạm.\n- Ghi nhận, khen thưởng gia đình sinh con một bề là gái nuôi dạy con tốt." }],
+    cauHoi:[{ hoi:"Tỷ số giới tính khi sinh tự nhiên khoảng bao nhiêu?", dapAn:"Khoảng 104–106 bé trai trên 100 bé gái." },{ hoi:"Nguyên nhân sâu xa của mất cân bằng giới tính khi sinh là gì?", dapAn:"Tâm lý trọng nam khinh nữ, muốn có con trai nối dõi." },{ hoi:"Kể tên ba hành vi bị nghiêm cấm liên quan đến lựa chọn giới tính thai nhi.", dapAn:"Tuyên truyền phương pháp tạo giới tính; chẩn đoán, tiết lộ giới tính thai nhi; loại bỏ thai vì lý do giới tính." }] },
+  { k:"tienhonnhan", ten:"Tư vấn, khám sức khỏe trước khi kết hôn", re:/tien hon nhan|truoc khi ket hon|truoc hon nhan|nam nu thanh nien/,
+    khauHieu:["Khám sức khỏe trước khi kết hôn vì hạnh phúc lứa đôi","Hôn nhân khỏe mạnh, con cái thông minh","Tư vấn tiền hôn nhân: hiểu nhau hơn, yêu thương bền lâu","Chuẩn bị sức khỏe hôm nay cho thế hệ tương lai"],
+    phuDe:"Tư vấn và khám sức khỏe tiền hôn nhân, nâng cao chất lượng giống nòi",
+    phan:[
+      { tieuDe:"Lợi ích của khám sức khỏe tiền hôn nhân", body:"Khám sức khỏe trước khi kết hôn giúp nam, nữ thanh niên biết rõ tình trạng sức khỏe của mình và người bạn đời.\n- Phát hiện sớm bệnh lây truyền qua đường tình dục, bệnh mạn tính để điều trị.\n- Phát hiện nguy cơ bệnh di truyền như tan máu bẩm sinh (thalassemia) để được tư vấn.\n- Chuẩn bị tốt cho việc mang thai và sinh con khỏe mạnh." },
+      { tieuDe:"Nội dung tư vấn và khám", body:"Việc tư vấn và khám được thực hiện tại cơ sở y tế có đủ điều kiện.\n- Khám tổng quát, khám sức khỏe sinh sản.\n- Xét nghiệm theo chỉ định của bác sĩ (công thức máu, nhóm máu, viêm gan B, HIV…).\n- Tư vấn kế hoạch hóa gia đình, chuẩn bị mang thai, dinh dưỡng." },
+      { tieuDe:"Khi nào nên đi khám", body:"Nên đi khám từ 3 đến 6 tháng trước khi kết hôn để có thời gian điều trị, tư vấn nếu cần.\n- Cả hai người cùng đi khám.\n- Mang theo kết quả các lần khám trước nếu có.\n- Hỏi cán bộ y tế xã hoặc cộng tác viên dân số để được hướng dẫn nơi khám." }],
+    cauHoi:[{ hoi:"Nên đi khám sức khỏe tiền hôn nhân vào thời điểm nào?", dapAn:"Khoảng 3–6 tháng trước khi kết hôn, cả hai người cùng đi." },{ hoi:"Khám tiền hôn nhân giúp phát hiện những nguy cơ gì?", dapAn:"Bệnh lây truyền qua đường tình dục, bệnh mạn tính, nguy cơ bệnh di truyền như tan máu bẩm sinh." }] },
+  { k:"sangloc", ten:"Tầm soát, chẩn đoán trước sinh và sơ sinh", re:/sang loc|tam soat|chan doan truoc sinh|so sinh|mau got chan/,
+    khauHieu:["Tầm soát trước sinh, sơ sinh: phát hiện sớm, can thiệp kịp thời","Vì con khỏe mạnh, hãy tầm soát trước sinh và sơ sinh","Một giọt máu gót chân, một tương lai khỏe mạnh","Mẹ an tâm, con khỏe mạnh nhờ tầm soát sớm"],
+    phuDe:"Tầm soát, chẩn đoán, điều trị trước sinh và sơ sinh, nâng cao chất lượng dân số",
+    phan:[
+      { tieuDe:"Tầm soát trước sinh là gì", body:"Tầm soát trước sinh là việc dùng các kỹ thuật như siêu âm, xét nghiệm máu mẹ để phát hiện sớm nguy cơ dị tật, bệnh lý của thai nhi.\n- Siêu âm và xét nghiệm được thực hiện theo từng mốc tuổi thai, theo chỉ định của bác sĩ.\n- Mốc 11–13 tuần: siêu âm đo độ mờ da gáy, xét nghiệm máu mẹ.\n- Mốc khoảng 14–22 tuần: xét nghiệm, siêu âm hình thái thai nhi khi được chỉ định." },
+      { tieuDe:"Tầm soát sơ sinh là gì", body:"Tầm soát sơ sinh là lấy vài giọt máu gót chân của trẻ trong những ngày đầu sau sinh để phát hiện sớm một số bệnh bẩm sinh.\n- Thường thực hiện trong khoảng 24–72 giờ sau sinh theo hướng dẫn của cán bộ y tế.\n- Phát hiện sớm các bệnh như suy giáp trạng bẩm sinh, thiếu men G6PD…\n- Trẻ được điều trị sớm sẽ phát triển bình thường, tránh hậu quả nặng nề." },
+      { tieuDe:"Gia đình cần làm gì", body:"Chủ động thực hiện tầm soát là bảo vệ tương lai của con.\n- Khám thai định kỳ, làm đủ các xét nghiệm theo chỉ định.\n- Đề nghị lấy máu gót chân cho trẻ trước khi xuất viện.\n- Nhận và giữ kết quả; nếu có nguy cơ, đưa trẻ đi khám chuyên khoa đúng hẹn." }],
+    cauHoi:[{ hoi:"Tầm soát sơ sinh thường lấy mẫu ở đâu và khi nào?", dapAn:"Lấy vài giọt máu gót chân trẻ, thường trong khoảng 24–72 giờ sau sinh." },{ hoi:"Lợi ích của tầm soát trước sinh?", dapAn:"Phát hiện sớm nguy cơ dị tật, bệnh lý của thai để tư vấn, can thiệp kịp thời." }] },
+  { k:"taohon", ten:"Phòng, chống tảo hôn và hôn nhân cận huyết thống", re:/tao hon|can huyet|ket hon som|ket hon truoc tuoi/,
+    khauHieu:["Nói không với tảo hôn và hôn nhân cận huyết thống","Tảo hôn: hôm nay vội vàng, ngày mai hối hận","Đủ tuổi kết hôn, đủ sức khỏe làm cha mẹ","Hôn nhân cận huyết thống gây hại cho giống nòi"],
+    phuDe:"Phòng, chống tảo hôn và hôn nhân cận huyết thống, nâng cao chất lượng dân số",
+    phan:[
+      { tieuDe:"Tảo hôn và hôn nhân cận huyết thống là gì", body:"Tảo hôn là việc lấy vợ, lấy chồng khi một bên hoặc cả hai bên chưa đủ tuổi kết hôn theo quy định. Theo Luật Hôn nhân và gia đình, nam từ đủ 20 tuổi, nữ từ đủ 18 tuổi mới được kết hôn.\n- Hôn nhân cận huyết thống là kết hôn giữa những người có cùng dòng máu về trực hệ hoặc có họ trong phạm vi ba đời.\n- Pháp luật nghiêm cấm tảo hôn và kết hôn giữa những người cùng dòng máu trực hệ, có họ trong phạm vi ba đời." },
+      { tieuDe:"Hậu quả", body:"Tảo hôn và hôn nhân cận huyết thống để lại hậu quả nặng nề.\n- Bà mẹ trẻ dễ gặp tai biến khi mang thai, sinh con; trẻ dễ nhẹ cân, suy dinh dưỡng.\n- Trẻ sinh ra từ hôn nhân cận huyết dễ mắc bệnh di truyền, dị tật.\n- Thanh niên mất cơ hội học tập, việc làm; gia đình dễ đói nghèo, bất hòa." },
+      { tieuDe:"Giải pháp tại cộng đồng", body:"Cả cộng đồng cùng tham gia phòng, chống.\n- Cha mẹ không ép buộc, không tổ chức cưới cho con chưa đủ tuổi.\n- Nhà trường, đoàn thanh niên giáo dục sức khỏe sinh sản cho học sinh.\n- Cộng tác viên phát hiện sớm, báo cáo và phối hợp vận động các trường hợp có nguy cơ." }],
+    cauHoi:[{ hoi:"Tuổi kết hôn theo Luật Hôn nhân và gia đình?", dapAn:"Nam từ đủ 20 tuổi, nữ từ đủ 18 tuổi." },{ hoi:"Hôn nhân cận huyết thống gồm những trường hợp nào?", dapAn:"Kết hôn giữa người cùng dòng máu về trực hệ hoặc có họ trong phạm vi ba đời." }] },
+  { k:"ngct", ten:"Chăm sóc sức khỏe người cao tuổi", re:/cao tuoi|gia hoa|nguoi gia/,
+    khauHieu:["Chăm sóc người cao tuổi là trách nhiệm của gia đình và xã hội","Người cao tuổi khỏe mạnh, gia đình hạnh phúc","Kính lão đắc thọ","Sống vui, sống khỏe, sống có ích"],
+    phuDe:"Chủ động thích ứng với già hóa dân số, chăm sóc sức khỏe người cao tuổi",
+    phan:[
+      { tieuDe:"Già hóa dân số", body:"Người cao tuổi là công dân Việt Nam từ đủ 60 tuổi trở lên. Tỷ lệ người cao tuổi trong dân số đang tăng nhanh do tuổi thọ tăng và mức sinh giảm.\n- Già hóa nhanh đặt ra yêu cầu lớn về chăm sóc sức khỏe, an sinh xã hội.\n- Mỗi gia đình, mỗi địa phương cần chủ động chuẩn bị." },
+      { tieuDe:"Chăm sóc sức khỏe người cao tuổi", body:"Người cao tuổi cần được chăm sóc toàn diện về thể chất và tinh thần.\n- Khám sức khỏe định kỳ, lập hồ sơ theo dõi sức khỏe tại trạm y tế.\n- Ăn uống đủ chất, giảm muối, giảm đường; vận động nhẹ nhàng thường xuyên.\n- Phát hiện sớm, điều trị và quản lý bệnh tăng huyết áp, đái tháo đường.\n- Tham gia câu lạc bộ, sinh hoạt cộng đồng để vui khỏe." },
+      { tieuDe:"Trách nhiệm của gia đình và cộng đồng", body:"Gia đình là nơi chăm sóc chính cho người cao tuổi.\n- Con cháu quan tâm, phụng dưỡng, đưa ông bà đi khám khi cần.\n- Cộng đồng tổ chức hoạt động văn hóa, thể thao phù hợp.\n- Phòng tránh té ngã: nhà cửa đủ sáng, sàn khô ráo, có tay vịn." }],
+    cauHoi:[{ hoi:"Người cao tuổi theo quy định là người bao nhiêu tuổi?", dapAn:"Từ đủ 60 tuổi trở lên." },{ hoi:"Nêu ba việc giúp người cao tuổi sống khỏe.", dapAn:"Khám sức khỏe định kỳ, dinh dưỡng hợp lý, vận động thường xuyên, tham gia sinh hoạt cộng đồng." }] },
+  { k:"khhgd", ten:"Kế hoạch hóa gia đình, sử dụng biện pháp tránh thai an toàn", re:/ke hoach hoa gia dinh|khhgd|tranh thai|bptt|suc khoe sinh san/,
+    khauHieu:["Chủ động kế hoạch hóa gia đình vì hạnh phúc gia đình","Sử dụng biện pháp tránh thai an toàn, phù hợp","Kế hoạch hóa gia đình: mẹ khỏe, con ngoan, gia đình hạnh phúc","Tránh thai ngoài ý muốn, bảo vệ sức khỏe sinh sản"],
+    phuDe:"Chăm sóc sức khỏe sinh sản, kế hoạch hóa gia đình",
+    phan:[
+      { tieuDe:"Kế hoạch hóa gia đình là gì", body:"Kế hoạch hóa gia đình là việc mỗi cặp vợ chồng, cá nhân chủ động, tự nguyện quyết định số con, thời gian sinh con và khoảng cách giữa các lần sinh.\n- Giúp bảo vệ sức khỏe bà mẹ, trẻ em.\n- Giúp gia đình có điều kiện kinh tế, chăm sóc con tốt hơn." },
+      { tieuDe:"Các biện pháp tránh thai", body:"Có nhiều biện pháp tránh thai; mỗi người chọn biện pháp phù hợp sau khi được tư vấn.\n- Biện pháp dài hạn: đặt dụng cụ tử cung (vòng), thuốc cấy tránh thai.\n- Biện pháp ngắn hạn: thuốc uống, thuốc tiêm tránh thai, bao cao su.\n- Bao cao su vừa tránh thai vừa phòng bệnh lây truyền qua đường tình dục.\n- Biện pháp vĩnh viễn: triệt sản nam, triệt sản nữ (khi đã đủ con và tự nguyện)." },
+      { tieuDe:"Lựa chọn và sử dụng an toàn", body:"Việc sử dụng biện pháp tránh thai cần đúng hướng dẫn của cán bộ y tế.\n- Đến trạm y tế để được tư vấn, khám trước khi dùng.\n- Tái khám đúng hẹn; thấy dấu hiệu bất thường cần đến cơ sở y tế ngay.\n- Hạn chế phá thai; phá thai không an toàn gây nguy hiểm đến sức khỏe và tính mạng." }],
+    cauHoi:[{ hoi:"Biện pháp tránh thai nào vừa tránh thai vừa phòng bệnh lây truyền qua đường tình dục?", dapAn:"Bao cao su." },{ hoi:"Kể tên hai biện pháp tránh thai dài hạn.", dapAn:"Đặt dụng cụ tử cung (vòng) và thuốc cấy tránh thai." }] },
+  { k:"ngaydanso", ten:"Ngày Dân số Việt Nam 26/12, Tháng hành động quốc gia về dân số", re:/26\/12|26-12|ngay dan so|thang hanh dong|11\/7|dan so the gioi/,
+    khauHieu:["Hưởng ứng Ngày Dân số Việt Nam 26/12","Đầu tư cho công tác dân số là đầu tư cho phát triển bền vững","Nâng cao chất lượng dân số vì sự phát triển bền vững","Dân số là yếu tố quan trọng hàng đầu của sự nghiệp xây dựng và bảo vệ Tổ quốc"],
+    phuDe:"Hưởng ứng Tháng hành động quốc gia về dân số và Ngày Dân số Việt Nam 26/12",
+    phan:[
+      { tieuDe:"Ý nghĩa của Ngày Dân số Việt Nam", body:"Ngày 26 tháng 12 hằng năm là Ngày Dân số Việt Nam, gắn với dấu mốc ngày 26/12/1961 Hội đồng Chính phủ ban hành Quyết định về việc sinh đẻ có hướng dẫn. Tháng 12 hằng năm là Tháng hành động quốc gia về dân số.\n- Dịp để tôn vinh những người làm công tác dân số.\n- Dịp để tuyên truyền sâu rộng chủ trương, chính sách về dân số." },
+      { tieuDe:"Định hướng công tác dân số trong tình hình mới", body:"Công tác dân số chuyển trọng tâm từ kế hoạch hóa gia đình sang giải quyết toàn diện các vấn đề quy mô, cơ cấu, phân bố và chất lượng dân số.\n- Duy trì vững chắc mức sinh thay thế.\n- Đưa tỷ số giới tính khi sinh về mức cân bằng tự nhiên.\n- Tận dụng cơ cấu dân số vàng, thích ứng với già hóa dân số.\n- Nâng cao chất lượng dân số, sức khỏe và tầm vóc người Việt Nam." },
+      { tieuDe:"Hoạt động hưởng ứng tại địa phương", body:"Các hoạt động được tổ chức thiết thực, phù hợp với điều kiện của xã.\n- Treo băng rôn, khẩu hiệu; phát thanh trên loa truyền thanh.\n- Tổ chức nói chuyện chuyên đề, tư vấn tại cộng đồng.\n- Cung cấp dịch vụ chăm sóc sức khỏe sinh sản, kế hoạch hóa gia đình.\n- Biểu dương cộng tác viên, gia đình tiêu biểu." }],
+    cauHoi:[{ hoi:"Ngày Dân số Việt Nam là ngày nào?", dapAn:"Ngày 26 tháng 12 hằng năm." },{ hoi:"Tháng hành động quốc gia về dân số là tháng mấy?", dapAn:"Tháng 12 hằng năm." }] }
+];
+const TT_KYNANG = { tieuDe:"Kỹ năng truyền thông trực tiếp của cộng tác viên", body:"Truyền thông trực tiếp tại hộ gia đình, tổ dân cư là thế mạnh của cộng tác viên dân số.\n- Chuẩn bị nội dung ngắn gọn, tờ rơi, tranh lật phù hợp đối tượng.\n- Chào hỏi thân thiện, chọn thời điểm gia đình rảnh rỗi.\n- Lắng nghe, hỏi để hiểu hoàn cảnh; không phê phán, không áp đặt.\n- Dùng ngôn ngữ dễ hiểu, ví dụ gần gũi ở địa phương.\n- Hẹn lần gặp sau, ghi chép kết quả vào sổ theo dõi." };
+
+/* ===================== Tuyên truyền: banner, tài liệu tập huấn, bản trình bày ===================== */
+const TT = { list:null, id:null, tab:"yc", imgs:[], busy:false };
+const TT_OUT = [["banner","Banner, khẩu hiệu","Ảnh PNG độ phân giải cao để in, treo, đăng"],["taiLieu","Tài liệu tập huấn","Tệp Word (.docx), thể thức Times New Roman, A4"],["trinhBay","Bản trình bày","Tệp PowerPoint (.pptx), khổ 16:9, có lời thuyết trình"]];
+const TT_SIZES = { ngang:{ ten:"Băng rôn ngang 5 × 0,8 m", w:6250, h:1000 }, doc:{ ten:"Áp phích dọc A3", w:2480, h:3508 }, vuong:{ ten:"Ảnh vuông đăng Zalo, Facebook", w:2160, h:2160 }, man:{ ten:"Màn hình, ảnh bìa 16:9", w:3840, h:2160 } };
+const TT_THEMES = { yte:{ ten:"Xanh y tế", a:"#0d4a68", b:"#1b7fa3", acc:"#f4c04e", dark:"#0a2f42" }, do:{ ten:"Đỏ cờ", a:"#9e1218", b:"#d22f27", acc:"#ffd54a", dark:"#5e0a0e" }, la:{ ten:"Xanh lá", a:"#1a5e34", b:"#2f9358", acc:"#ffe17a", dark:"#0f3a20" }, cam:{ ten:"Cam ấm", a:"#a9471a", b:"#e0782a", acc:"#fff1c1", dark:"#5c250c" } };
+const ttCur = () => (TT.list || []).find(p => p.id === TT.id);
+function ttNew(){
+  const s = S.settings;
+  return { id: uid("tt"), ten:"", chuDe:"", doiTuong:"Cộng tác viên dân số, người dân trong độ tuổi sinh đẻ", dip:"", phamVi:"Toàn xã", nguoiTrinhBay: s.nguoiLap || "", yeuCau:"", nguon:[],
+    out:{ banner:true, taiLieu:true, trinhBay:true }, sizes:["ngang","vuong"], theme:"yte", soTrang:10, soLieu:true, content:null, createdAt:Date.now(), updatedAt:Date.now() };
+}
+async function ttLoad(){
+  if (TT.list) return;
+  TT.list = [];
+  if (!cap.db) return;
+  try { const q = await cap.db.collection("tuyentruyen").get(); TT.list = q.docs.map(d => ({ ...clone(d.data()), id:d.id })).sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0)); }
+  catch(e){ toast("Không tải được danh sách tuyên truyền.", true); }
+}
+const ttSaveSoon = debounce(p => { p.updatedAt = Date.now(); store.put("tuyentruyen", p); }, 700);
+function ttGet(o, path){ return path.split(".").reduce((a, k) => a == null ? a : a[k], o); }
+function ttSet(o, path, v){ const ks = path.split("."); let a = o; for (let i = 0; i < ks.length - 1; i++) { if (a[ks[i]] == null) a[ks[i]] = /^\d+$/.test(ks[i+1]) ? [] : {}; a = a[ks[i]]; } a[ks[ks.length-1]] = v; }
+const ttLines = s => String(s || "").split("\n").map(x => x.trim()).filter(Boolean);
+const ttUnit = () => { const s = S.settings; return s.donViBieu || s.coQuan || "Trạm Y tế xã"; };
+
+/* ---------- Số liệu của xã để đưa vào nội dung ---------- */
+function ttStats(){
+  const lks = S.solieu.filter(d => d.loai === "b01_luyke" && d.from === 1).sort((a,b) => (b.nam*100 + b.to) - (a.nam*100 + a.to));
+  const d = lks[0]; if (!d) return null; const t = { ...d.toanXa }, out = [];
+  const lastMon = S.solieu.find(x => x.loai === "b01_thang" && x.nam === d.nam && x.from === d.to); if (lastMon) for (const k of STOCK_KEYS) if (lastMon.toanXa[k] != null) t[k] = lastMon.toanXa[k]; // số hiện có lấy theo tháng cuối kỳ
+  const add = (k, l) => { if (t[k]) out.push(`${l}: ${t[k]}`); };
+  add("sinh_tong", "Tổng số trẻ sinh"); add("sinh_nam", "Trẻ nam"); add("sinh_nu", "Trẻ nữ"); add("sinh_con3", "Sinh con thứ 3 trở lên"); add("sinh_me20", "Con của phụ nữ dưới 20 tuổi"); add("mangthai_dang", `Phụ nữ đang mang thai (tháng ${pad2(d.to)})`); add("vong_moi", "Đặt vòng mới"); add("cay_moi", "Cấy thuốc tránh thai mới");
+  let tsgt = null; if (t.sinh_nam && t.sinh_nu) tsgt = Math.round(t.sinh_nam / t.sinh_nu * 100);
+  return { ky:`tháng 01–${pad2(d.to)}/${d.nam}`, lines: out, tsgt, t };
+}
+
+/* ---------- Soạn nội dung không cần trợ lý: theo thư viện chủ đề ---------- */
+function ttPickLib(p){
+  const hay = noDia([p.chuDe, p.ten, p.dip, p.yeuCau].join(" "));
+  let best = null, bs = 0;
+  for (const L of TT_LIB) { const m = hay.match(new RegExp(L.re.source, "g")); const sc = m ? m.length : 0; if (sc > bs) { bs = sc; best = L; } }
+  return best || TT_LIB.find(L => L.k === "ngaydanso");
+}
+function ttQuotedSlogans(text){
+  const out = [], seen = new Set();
+  for (const raw of ttLines(text)) {
+    const l = raw.replace(/^[-–•+*\d.)\s]+/, "");
+    const m = l.match(/[“"]([^”"]{8,120})[”"]/g);
+    if (m) for (const q of m) { const v = q.replace(/[“”"]/g, "").trim(); if (!seen.has(v)) { seen.add(v); out.push(v); } }
+  }
+  return out.slice(0, 8);
+}
+function ttFromLib(p){
+  const L = ttPickLib(p), st = p.soLieu ? ttStats() : null, chuDe = p.chuDe || L.ten;
+  const kh = [...ttQuotedSlogans(p.yeuCau), ...L.khauHieu].filter((v, i, a) => a.indexOf(v) === i).slice(0, 8);
+  const phan = L.phan.map(x => ({ ...x }));
+  if (st && st.lines.length) phan.splice(1, 0, { tieuDe:`Tình hình dân số của xã (${st.ky})`, body:`Theo số liệu báo cáo ${st.ky} của ${ttUnit()}:\n` + st.lines.map(l => "- " + l + ".").join("\n") + (st.tsgt ? `\n- Tỷ số giới tính khi sinh: khoảng ${st.tsgt} bé trai trên 100 bé gái (mức tự nhiên khoảng 104–106).` : "") });
+  const yc = ttLines(p.yeuCau).flatMap(l => l.split(/(?<=[.;!?])\s+(?=[A-ZÀ-Ỹ"“])/)).map(x => x.trim()).filter(l => l.length > 25).slice(0, 8);
+  if (yc.length) phan.push({ tieuDe:"Nội dung theo văn bản yêu cầu", body: yc.map(l => "- " + l.replace(/^[-–•+*\s]+/, "")).join("\n") });
+  phan.push({ ...TT_KYNANG });
+  const slides = [];
+  for (const x of phan) {
+    const lines = ttLines(x.body), bul = lines.filter(l => /^[-–•]/.test(l)).map(l => l.replace(/^[-–•]\s*/, "")), para = lines.filter(l => !/^[-–•]/.test(l));
+    const items = (bul.length ? bul : para).map(s => s.length > 110 ? s.slice(0, s.lastIndexOf(" ", 105)) + "…" : s);
+    for (let i = 0; i < items.length; i += 5) slides.push({ tieuDe: x.tieuDe + (items.length > 5 ? ` (${i/5 + 1})` : ""), y: items.slice(i, i + 5), ghiChu: para.join(" ") || items.join(". ") });
+  }
+  return {
+    nguon:"thư viện chủ đề " + L.ten,
+    khauHieu: kh,
+    banner:{ tieuDe: kh[0] || chuDe, phuDe: L.phuDe, dongCuoi: [ttUnit(), p.dip].filter(Boolean).join(" · ") },
+    taiLieu:{ tieuDe: chuDe, doiTuong: p.doiTuong, thoiLuong:"90 phút", mucTieu:[`Hiểu đúng các nội dung cơ bản về ${chuDe.toLowerCase()}.`, "Nắm được quy định, thông điệp chính để tuyên truyền tại cộng đồng.", "Vận dụng kỹ năng truyền thông trực tiếp tại hộ gia đình."], phan, cauHoi: L.cauHoi.map(x => ({ ...x })) },
+    trinhBay:{ tieuDe: chuDe, phuDe: p.dip || L.phuDe, slides: slides.slice(0, Math.max(4, (p.soTrang || 10) - 2)) }
+  };
+}
+
+/* ---------- Soạn nội dung bằng Claude ---------- */
+function ttPrompt(p, nImg){
+  const st = p.soLieu ? ttStats() : null, want = TT_OUT.filter(([k]) => p.out[k]).map(([k]) => k);
+  const sch = { chuDe:"chủ đề ngắn gọn", khauHieu:["5–8 khẩu hiệu, mỗi câu tối đa 14 từ, đúng định hướng của ngành dân số"] };
+  if (p.out.banner) sch.banner = { tieuDe:"khẩu hiệu chính in to trên banner, tối đa 12 từ", phuDe:"dòng phụ tối đa 20 từ", dongCuoi:"đơn vị hoặc dịp tổ chức, ngắn" };
+  if (p.out.taiLieu) sch.taiLieu = { tieuDe:"tên tài liệu", doiTuong:"đối tượng", thoiLuong:"ví dụ 90 phút", mucTieu:["3–4 mục tiêu"], phan:[{ tieuDe:"tên phần", body:"nội dung phần: các đoạn văn xuôi cách nhau bằng xuống dòng; ý liệt kê bắt đầu bằng '- '" }], cauHoi:[{ hoi:"câu hỏi ôn tập", dapAn:"đáp án ngắn" }] };
+  if (p.out.trinhBay) sch.trinhBay = { tieuDe:"tiêu đề bài trình bày", phuDe:"dòng phụ", slides:[{ tieuDe:"tiêu đề trang", y:["tối đa 5 ý, mỗi ý tối đa 16 từ"], ghiChu:"lời thuyết trình cho người trình bày, 2–4 câu" }] };
+  return `Bạn là cán bộ truyền thông dân số của ${ttUnit()}${S.settings.chuQuan ? " (" + S.settings.chuQuan + ")" : ""}. Hãy soạn nội dung tuyên truyền theo yêu cầu dưới đây, bằng tiếng Việt chuẩn, giọng văn hành chính - tuyên truyền, dễ hiểu với người dân ở xã.
+Sản phẩm cần soạn: ${want.map(k => TT_OUT.find(x => x[0] === k)[1]).join(", ")}.
+Chủ đề: ${p.chuDe || "(lấy từ văn bản yêu cầu)"}
+Đối tượng: ${p.doiTuong || "người dân"}
+Dịp, thời gian: ${p.dip || "không nêu"}
+Phạm vi: ${p.phamVi || "toàn xã"}
+${p.out.taiLieu ? "Tài liệu tập huấn: 4–7 phần, mỗi phần 120–300 từ, có phần kỹ năng truyền thông cho cộng tác viên và 4–6 câu hỏi ôn tập.\n" : ""}${p.out.trinhBay ? `Bản trình bày: khoảng ${p.soTrang || 10} trang nội dung (không tính trang bìa và trang kết).\n` : ""}
+Quy tắc bắt buộc:
+- Chỉ dùng thông tin chính xác, phù hợp chủ trương, pháp luật hiện hành của Việt Nam về dân số. Không bịa số liệu, không bịa số hiệu văn bản. Nếu văn bản yêu cầu nêu số liệu, văn bản, khẩu hiệu thì dùng đúng như vậy và ưu tiên khẩu hiệu đó.
+- Số liệu của địa phương chỉ lấy từ phần SỐ LIỆU CỦA XÃ (nếu có), ghi rõ kỳ số liệu.
+- Viết số theo kiểu Việt Nam (dấu phẩy thập phân).
+Trả về đúng một đối tượng JSON theo cấu trúc (chỉ gồm các khóa của sản phẩm được yêu cầu):
+${JSON.stringify(sch)}
+${st ? `\nSỐ LIỆU CỦA XÃ (${st.ky}, toàn xã): ${st.lines.join("; ")}${st.tsgt ? `; tỷ số giới tính khi sinh khoảng ${st.tsgt} bé trai/100 bé gái` : ""}.` : ""}
+${nImg ? `\nVăn bản yêu cầu có ${nImg} ảnh kèm theo: đọc kỹ nội dung trong ảnh.` : ""}
+VĂN BẢN YÊU CẦU TUYÊN TRUYỀN:
+${(p.yeuCau || "(không có, soạn theo chủ đề)").slice(0, 60000)}`;
+}
+function ttNormalize(c, p){
+  const fb = ttFromLib(p), o = { nguon:"Claude", khauHieu: Array.isArray(c.khauHieu) && c.khauHieu.length ? c.khauHieu.map(String) : fb.khauHieu };
+  o.banner = { ...fb.banner, ...(c.banner || {}) };
+  if (c.taiLieu) { const t = c.taiLieu; o.taiLieu = { ...fb.taiLieu, ...t, mucTieu: Array.isArray(t.mucTieu) ? t.mucTieu.map(String) : fb.taiLieu.mucTieu, phan: Array.isArray(t.phan) && t.phan.length ? t.phan.map(x => ({ tieuDe:String(x.tieuDe || ""), body: String(x.body || [].concat(x.noiDung || []).join("\n") + (x.y ? "\n" + [].concat(x.y).map(v => "- " + v).join("\n") : "")) })) : fb.taiLieu.phan, cauHoi: Array.isArray(t.cauHoi) ? t.cauHoi.map(x => ({ hoi:String(x.hoi || ""), dapAn:String(x.dapAn || "") })) : fb.taiLieu.cauHoi }; }
+  else o.taiLieu = fb.taiLieu;
+  if (c.trinhBay && Array.isArray(c.trinhBay.slides)) o.trinhBay = { tieuDe: c.trinhBay.tieuDe || fb.trinhBay.tieuDe, phuDe: c.trinhBay.phuDe || "", slides: c.trinhBay.slides.map(s => ({ tieuDe:String(s.tieuDe || ""), y: [].concat(s.y || []).map(String).slice(0, 6), ghiChu:String(s.ghiChu || "") })) };
+  else o.trinhBay = fb.trinhBay;
+  if (c.chuDe && !p.chuDe) p.chuDe = String(c.chuDe);
+  return o;
+}
+async function ttGenerate(useAI){
+  const p = ttCur(); if (!p || TT.busy) return;
+  if (!p.yeuCau.trim() && !p.chuDe.trim() && !TT.imgs.length) { toast("Nhập chủ đề, viết hoặc tải văn bản yêu cầu tuyên truyền trước.", true); return; }
+  if (!TT_OUT.some(([k]) => p.out[k])) { toast("Chọn ít nhất một sản phẩm cần tạo.", true); return; }
+  if (p.content && !await confirmBox("Soạn lại sẽ thay nội dung đang có (kể cả phần anh/chị đã sửa). Tiếp tục?", "Soạn lại")) return;
+  if (!useAI || !cap.sample) {
+    p.content = ttFromLib(p); if (!p.ten) p.ten = p.chuDe || p.content.taiLieu.tieuDe; TT.tab = p.out.banner ? "banner" : p.out.taiLieu ? "tailieu" : "trinhbay"; ttSaveSoon(p); render();
+    toast("Đã soạn theo " + p.content.nguon + ". Anh/chị xem và chỉnh sửa trước khi tải."); return;
+  }
+  TT.busy = true; render();
+  try {
+    let imgs = TT.imgs; if (imgs.length && !cap.images) imgs = []; if (cap.images) imgs = imgs.slice(0, cap.images.maxCount || 4);
+    const c = await cap.sample.json(ttPrompt(p, imgs.length), { images: imgs.length ? imgs : undefined, modelTier: imgs.length ? "complex" : (S.settings.aiTier || "default") });
+    p.content = ttNormalize(c || {}, p); if (!p.ten) p.ten = p.chuDe || p.content.taiLieu.tieuDe;
+    TT.tab = p.out.banner ? "banner" : p.out.taiLieu ? "tailieu" : "trinhbay"; ttSaveSoon(p);
+    toast("Claude đã soạn xong. Anh/chị xem và chỉnh sửa trước khi tải.");
+  } catch(e){ toast("Claude chưa soạn được (" + (e && (e.message || e.code) || "lỗi") + "). Có thể bấm “Soạn theo mẫu có sẵn”.", true); }
+  TT.busy = false; render();
+}
+
+/* ---------- Đọc tệp yêu cầu ---------- */
+async function ttAddFiles(files){
+  const p = ttCur(); if (!p) return;
+  for (const f of files) {
+    try {
+      if (/\.txt$/i.test(f.name)) { p.yeuCau = (p.yeuCau ? p.yeuCau + "\n\n" : "") + (await f.text()).trim(); }
+      else { const got = await fileToText(f); if (got.text) p.yeuCau = (p.yeuCau ? p.yeuCau + "\n\n" : "") + got.text.trim(); if (got.images && got.images.length) TT.imgs.push(...got.images); }
+      p.nguon = [...new Set([...(p.nguon || []), f.name])];
+    } catch(e){ toast(f.name + ": " + (e.message || "không đọc được"), true); }
+  }
+  if (!p.chuDe) { const L = ttPickLib(p); if (L && noDia(p.yeuCau).match(L.re)) p.chuDe = L.ten; }
+  ttSaveSoon(p); render();
+  if (TT.imgs.length && !cap.sample) toast("Đã nhận ảnh. Nội dung trong ảnh chỉ đọc được khi trợ lý Claude sẵn sàng; nếu chưa có, hãy gõ nội dung vào ô yêu cầu.", true);
+}
+
+/* ---------- Vẽ banner ---------- */
+async function ttFonts(){ try { await Promise.all([document.fonts.load("700 80px 'Be Vietnam Pro'"), document.fonts.load("500 40px 'Be Vietnam Pro'")]); } catch(e){} }
+function ttWrap(ctx, text, maxW){ const words = String(text).split(/\s+/).filter(Boolean), lines = []; let cur = ""; for (const w of words) { const t = cur ? cur + " " + w : w; if (ctx.measureText(t).width <= maxW || !cur) cur = t; else { lines.push(cur); cur = w; } } if (cur) lines.push(cur); return lines; }
+function ttFit(ctx, text, maxW, maxH, maxLines, start, weight, lh=1.18){
+  for (let s = start; s >= 12; s = Math.floor(s * 0.94)) { ctx.font = `${weight} ${s}px 'Be Vietnam Pro', Arial, sans-serif`; const ls = ttWrap(ctx, text, maxW); if (ls.length <= maxLines && ls.length * s * lh <= maxH && ls.every(l => ctx.measureText(l).width <= maxW)) return { size:s, lines:ls }; }
+  ctx.font = `${weight} 12px 'Be Vietnam Pro', Arial, sans-serif`; return { size:12, lines: ttWrap(ctx, text, maxW) };
+}
+function ttFamily(ctx, x, y, h, col){ // biểu tượng gia đình đơn giản: 2 người lớn, 2 trẻ
+  const figs = [[0, 1], [0.62, 0.92], [1.22, 0.62], [1.7, 0.56]];
+  ctx.save(); ctx.fillStyle = col;
+  x += h * 0.17; for (const [dx, k] of figs) { const hh = h * k, cx = x + dx * h * 0.62, top = y + (h - hh); const r = hh * 0.16;
+    ctx.beginPath(); ctx.arc(cx, top + r, r, 0, Math.PI * 2); ctx.fill();
+    const bw = hh * 0.34, bt = top + r * 2 + hh * 0.04; ctx.beginPath(); ctx.moveTo(cx - bw/2, y + h); ctx.lineTo(cx - bw/2, bt + bw*0.3); ctx.quadraticCurveTo(cx - bw/2, bt, cx, bt); ctx.quadraticCurveTo(cx + bw/2, bt, cx + bw/2, bt + bw*0.3); ctx.lineTo(cx + bw/2, y + h); ctx.closePath(); ctx.fill(); }
+  ctx.restore(); return h * 1.35;
+}
+function ttDrawBanner(cv, p, key){
+  const sz = TT_SIZES[key], th = TT_THEMES[p.theme] || TT_THEMES.yte, b = (p.content && p.content.banner) || {};
+  const W = sz.w, H = sz.h; cv.width = W; cv.height = H; const ctx = cv.getContext("2d"), u = Math.min(W, H);
+  const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, th.a); g.addColorStop(1, th.b); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalAlpha = 0.08; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(W * 0.92, H * 0.1, u * 0.55, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(W * 0.05, H * 1.02, u * 0.45, 0, Math.PI*2); ctx.fill(); ctx.restore();
+  const wide = W / H > 3, band = wide ? H * 0.16 : u * 0.1, pad = wide ? H * 0.12 : u * 0.08;
+  // dải dưới
+  ctx.fillStyle = th.acc; ctx.fillRect(0, H - band, W, band);
+  ctx.fillStyle = th.dark; const fb = ttFit(ctx, b.dongCuoi || ttUnit(), W - pad * 2, band * 0.62, 1, band * 0.5, 600); ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillText(fb.lines[0] || "", W / 2, H - band / 2);
+  // tên đơn vị phía trên
+  const org = (ttUnit() || "").toUpperCase();
+  ctx.textAlign = wide ? "left" : "center"; ctx.textBaseline = "alphabetic"; ctx.fillStyle = th.acc;
+  let x0 = pad, areaW = W - pad * 2, top = pad;
+  if (wide) { const iw = ttFamily(ctx, pad, H * 0.16, H * 0.6, "rgba(255,255,255,.92)"); x0 = pad + iw + pad * 0.6; areaW = W - x0 - pad; ctx.fillStyle = th.acc; ctx.fillRect(x0 - pad * 0.35, H * 0.14, Math.max(4, H * 0.012), H * 0.62); }
+  ctx.fillStyle = th.acc;
+  const fo = ttFit(ctx, org, areaW, u * (wide ? 0.11 : 0.05), 1, u * (wide ? 0.085 : 0.04), 600); ctx.font = `600 ${fo.size}px 'Be Vietnam Pro', Arial, sans-serif`;
+  const orgY = wide ? H * 0.12 + fo.size : top + fo.size; ctx.fillText(fo.lines[0] || "", wide ? x0 : W / 2, orgY);
+  if (!wide) { ctx.fillRect(W/2 - u * 0.08, orgY + fo.size * 0.5, u * 0.16, Math.max(3, u * 0.006)); ttFamily(ctx, W/2 - u * 0.2 * 0.675, orgY + fo.size * 1.4, u * 0.2, "rgba(255,255,255,.9)"); }
+  // tiêu đề
+  const tTop = wide ? orgY + fo.size * 0.55 : orgY + fo.size * 1.4 + u * 0.26, tBottom = wide ? H - band - H * 0.06 - (b.phuDe ? H * 0.12 : 0) : H - band - pad - (b.phuDe ? u * 0.16 : 0);
+  ctx.fillStyle = "#ffffff"; ctx.textAlign = wide ? "left" : "center";
+  const ft = ttFit(ctx, String(b.tieuDe || "").toUpperCase(), areaW, tBottom - tTop, wide ? 2 : 5, wide ? H * 0.3 : u * 0.12, 700, 1.15);
+  ctx.font = `700 ${ft.size}px 'Be Vietnam Pro', Arial, sans-serif`; ctx.textBaseline = "top";
+  const blockH = ft.lines.length * ft.size * 1.15, ty = tTop + Math.max(0, (tBottom - tTop - blockH) / 2);
+  ctx.save(); ctx.shadowColor = "rgba(0,0,0,.25)"; ctx.shadowBlur = ft.size * 0.12; ctx.shadowOffsetY = ft.size * 0.04;
+  ft.lines.forEach((l, i) => ctx.fillText(l, wide ? x0 : W / 2, ty + i * ft.size * 1.15)); ctx.restore();
+  if (b.phuDe) { ctx.fillStyle = "rgba(255,255,255,.9)"; const fp = ttFit(ctx, b.phuDe, areaW, wide ? H * 0.1 : u * 0.14, wide ? 1 : 3, wide ? H * 0.075 : u * 0.045, 500); ctx.font = `500 ${fp.size}px 'Be Vietnam Pro', Arial, sans-serif`; fp.lines.forEach((l, i) => ctx.fillText(l, wide ? x0 : W / 2, (wide ? H - band - H * 0.05 - fp.size * 1.1 : ty + blockH + u * 0.03) + i * fp.size * 1.2)); }
+  return cv;
+}
+async function ttRedraw(){ const p = ttCur(); if (!p || !p.content) return; await ttFonts(); $$("canvas[data-ttcv]").forEach(cv => ttDrawBanner(cv, p, cv.dataset.ttcv)); }
+async function ttPng(key){
+  const p = ttCur(); await ttFonts(); const cv = ttDrawBanner(document.createElement("canvas"), p, key);
+  const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+  await saveFile(safeName(`Banner ${TT_SIZES[key].ten} ${p.chuDe || p.ten}`) + ".png", blob);
+}
+
+/* ---------- Tài liệu tập huấn (.docx) ---------- */
+async function ttDocx(){
+  const p = ttCur(), t = p.content.taiLieu, s = S.settings;
+  const D = await loadLib("docx");
+  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, VerticalAlign, Footer, PageNumber } = D;
+  const FN = "Times New Roman", NONE = { style:BorderStyle.NONE, size:0, color:"FFFFFF" }, NOB = { top:NONE, bottom:NONE, left:NONE, right:NONE }, LINE = { style:BorderStyle.SINGLE, size:6, color:"000000" };
+  const run = (text, o={}) => new TextRun({ text, font:FN, size:(o.size||14)*2, bold:!!o.bold, italics:!!o.italic });
+  const P = (text, o={}) => new Paragraph({ alignment: o.align ?? AlignmentType.CENTER, spacing:{ before:o.before||0, after:o.after||0, line:o.line||240, lineRule:"auto" }, indent:o.indent, keepNext:o.keepNext, children: Array.isArray(text) ? text : [run(text, o)] });
+  const rule = ind => new Paragraph({ alignment:AlignmentType.CENTER, spacing:{ before:70, after:0 }, indent:{ left:ind, right:ind }, border:{ top:LINE }, children:[new TextRun({ text:"", size:4 })] });
+  const cell = (children, w) => new TableCell({ children, width:{ size:w, type:WidthType.DXA }, borders:NOB, verticalAlign:VerticalAlign.TOP });
+  const TW = 11906 - 1701 - 851, L = 3550, R = TW - L, d = ndDate(todayISO());
+  const header = new Table({ width:{ size:TW, type:WidthType.DXA }, columnWidths:[L, R], borders:{ top:NONE, bottom:NONE, left:NONE, right:NONE, insideHorizontal:NONE, insideVertical:NONE }, rows:[ new TableRow({ children:[
+    cell([ ...(s.chuQuan ? [P(s.chuQuan.toUpperCase(), { size:13 })] : []), P((s.coQuan || ttUnit()).toUpperCase(), { size:13, bold:true }), rule(Math.round(L * 0.3)) ], L),
+    cell([ P("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", { size:13, bold:true }), P("Độc lập - Tự do - Hạnh phúc", { size:14, bold:true }), rule(Math.round(R * 0.2)), P(`${s.diaDanh || "……"}, ngày ${d.d} tháng ${d.m} năm ${d.y}`, { size:14, italic:true, before:120 }) ], R) ]}) ]});
+  const body = (txt) => ttLines(txt).map(l => /^[-–•+]/.test(l)
+    ? new Paragraph({ alignment:AlignmentType.JUSTIFIED, spacing:{ before:60, after:0, line:288, lineRule:"auto" }, indent:{ left:567, hanging:283 }, children:[ run("- " + l.replace(/^[-–•+]\s*/, "")) ] })
+    : new Paragraph({ alignment:AlignmentType.JUSTIFIED, spacing:{ before:120, after:0, line:288, lineRule:"auto" }, indent:{ firstLine:567 }, children:[ run(l) ] }));
+  const H1 = txt => new Paragraph({ alignment:AlignmentType.LEFT, spacing:{ before:240, after:60, line:288, lineRule:"auto" }, indent:{ firstLine:567 }, keepNext:true, children:[ run(txt, { bold:true }) ] });
+  const H2 = txt => new Paragraph({ alignment:AlignmentType.LEFT, spacing:{ before:160, after:0, line:288, lineRule:"auto" }, indent:{ firstLine:567 }, keepNext:true, children:[ run(txt, { bold:true, italic:false }) ] });
+  const info = [["Đối tượng", t.doiTuong], ["Thời lượng", t.thoiLuong], ["Người trình bày", p.nguoiTrinhBay]].filter(x => x[1]).map(([k, v]) => new Paragraph({ alignment:AlignmentType.LEFT, spacing:{ before:60, after:0 }, indent:{ firstLine:567 }, children:[ run(k + ": ", { bold:true }), run(String(v)) ] }));
+  const kids = [ header, P("TÀI LIỆU TẬP HUẤN", { size:14, bold:true, before:360 }), P(String(t.tieuDe || p.chuDe).toUpperCase(), { size:14, bold:true }), rule(Math.round(TW * 0.36)), P("", { size:6 }), ...info,
+    H1("I. MỤC TIÊU"), ...t.mucTieu.map(m => new Paragraph({ alignment:AlignmentType.JUSTIFIED, spacing:{ before:60, after:0, line:288, lineRule:"auto" }, indent:{ left:567, hanging:283 }, children:[ run("- " + m) ] })),
+    H1("II. NỘI DUNG") ];
+  t.phan.forEach((x, i) => { kids.push(H2(`${i + 1}. ${x.tieuDe}`)); kids.push(...body(x.body)); });
+  if (t.cauHoi && t.cauHoi.length) { kids.push(H1("III. CÂU HỎI ÔN TẬP, THẢO LUẬN")); t.cauHoi.forEach((q, i) => { kids.push(new Paragraph({ alignment:AlignmentType.JUSTIFIED, spacing:{ before:100, after:0, line:288, lineRule:"auto" }, indent:{ firstLine:567 }, keepNext:true, children:[ run(`Câu ${i + 1}. `, { bold:true }), run(q.hoi) ] })); if (q.dapAn) kids.push(new Paragraph({ alignment:AlignmentType.JUSTIFIED, spacing:{ before:40, after:0, line:288, lineRule:"auto" }, indent:{ firstLine:567 }, children:[ run("Gợi ý trả lời: ", { italic:true, bold:true }), run(q.dapAn, { italic:true }) ] })); }); }
+  if (p.content.khauHieu && p.content.khauHieu.length) { kids.push(H1(`${t.cauHoi && t.cauHoi.length ? "IV" : "III"}. KHẨU HIỆU TUYÊN TRUYỀN`)); kids.push(...p.content.khauHieu.map(k => new Paragraph({ alignment:AlignmentType.LEFT, spacing:{ before:60, after:0, line:288, lineRule:"auto" }, indent:{ left:567, hanging:283 }, children:[ run("- " + k) ] }))); }
+  kids.push(P("", { size:8 }), new Table({ width:{ size:TW, type:WidthType.DXA }, columnWidths:[TW - 4400, 4400], borders:{ top:NONE, bottom:NONE, left:NONE, right:NONE, insideHorizontal:NONE, insideVertical:NONE }, rows:[ new TableRow({ cantSplit:true, children:[ cell([P("")], TW - 4400), cell([ P("NGƯỜI BIÊN SOẠN", { bold:true, before:120 }), P(""), P(""), P(""), P(p.nguoiTrinhBay || "", { bold:true }) ], 4400) ]}) ]}));
+  const footer = new Footer({ children:[ new Paragraph({ alignment:AlignmentType.CENTER, children:[ new TextRun({ children:[PageNumber.CURRENT], font:FN, size:24 }) ] }) ] });
+  const doc = new Document({ creator: ttUnit(), title: "Tài liệu tập huấn " + (t.tieuDe || ""), styles:{ default:{ document:{ run:{ font:FN, size:28 } } } },
+    sections:[{ properties:{ page:{ size:{ width:11906, height:16838 }, margin:{ top:1134, bottom:1134, left:1701, right:851 } } }, footers:{ default: footer }, children: kids }] });
+  await saveFile(safeName("Tai lieu tap huan " + (t.tieuDe || p.chuDe)) + ".docx", await Packer.toBlob(doc));
+}
+
+/* ---------- Bản trình bày (.pptx) ---------- */
+async function ttPptx(){
+  const p = ttCur(), tb = p.content.trinhBay, th = TT_THEMES[p.theme] || TT_THEMES.yte, h = c => c.replace("#", "");
+  const PptxGenJS = await loadLib("PptxGenJS"); const pp = new PptxGenJS(); pp.layout = "LAYOUT_WIDE"; pp.title = tb.tieuDe; pp.company = ttUnit();
+  const FONT = "Arial", unit = ttUnit(), d = ndDate(todayISO());
+  // bìa
+  let sl = pp.addSlide(); sl.background = { color: h(th.a) };
+  sl.addShape(pp.ShapeType.ellipse, { x:9.6, y:-2.2, w:6, h:6, fill:{ color:"FFFFFF", transparency:90 }, line:{ type:"none" } });
+  sl.addShape(pp.ShapeType.rect, { x:0.7, y:1.55, w:0.12, h:3.3, fill:{ color:h(th.acc) }, line:{ type:"none" } });
+  sl.addText(unit.toUpperCase(), { x:1.05, y:0.6, w:11, h:0.5, fontFace:FONT, fontSize:16, bold:true, color:h(th.acc) });
+  sl.addText(tb.tieuDe, { x:1.05, y:1.5, w:11.2, h:2.3, fontFace:FONT, fontSize:40, bold:true, color:"FFFFFF", valign:"middle", fit:"shrink" });
+  if (tb.phuDe) sl.addText(tb.phuDe, { x:1.05, y:3.8, w:11, h:1.0, fontFace:FONT, fontSize:20, color:"E8F1F5", valign:"top", fit:"shrink" });
+  sl.addText([ ...(p.nguoiTrinhBay ? [{ text:"Người trình bày: ", options:{ bold:true } }, { text:p.nguoiTrinhBay + "\n" }] : []), { text:`${S.settings.diaDanh || ""}${S.settings.diaDanh ? ", " : ""}tháng ${d.m}/${d.y}` } ], { x:1.05, y:5.6, w:11, h:1.0, fontFace:FONT, fontSize:16, color:"FFFFFF" });
+  // nội dung
+  tb.slides.forEach((s, i) => {
+    const x = pp.addSlide(); x.background = { color:"FFFFFF" };
+    x.addShape(pp.ShapeType.rect, { x:0, y:0, w:13.33, h:1.15, fill:{ color:h(th.a) }, line:{ type:"none" } });
+    x.addShape(pp.ShapeType.rect, { x:0, y:1.15, w:13.33, h:0.06, fill:{ color:h(th.acc) }, line:{ type:"none" } });
+    x.addText(s.tieuDe, { x:0.6, y:0.12, w:12.1, h:0.92, fontFace:FONT, fontSize:28, bold:true, color:"FFFFFF", valign:"middle", fit:"shrink" });
+    const items = (s.y || []).filter(Boolean);
+    if (items.length && items.length <= 3 && items.every(v => v.length <= 90)) {
+      const cw = (12.13 - (items.length - 1) * 0.35) / items.length;
+      items.forEach((v, j) => { const cx = 0.6 + j * (cw + 0.35);
+        x.addShape(pp.ShapeType.roundRect, { x:cx, y:1.85, w:cw, h:4.3, fill:{ color:"F3F7F9" }, line:{ color:"D5DFE5", width:1 }, rectRadius:0.12 });
+        x.addShape(pp.ShapeType.ellipse, { x:cx + 0.35, y:2.2, w:0.8, h:0.8, fill:{ color:h(th.b) }, line:{ type:"none" } });
+        x.addText(String(j + 1), { x:cx + 0.35, y:2.2, w:0.8, h:0.8, fontFace:FONT, fontSize:22, bold:true, color:"FFFFFF", align:"center", valign:"middle" });
+        x.addText(v, { x:cx + 0.35, y:3.2, w:cw - 0.7, h:2.7, fontFace:FONT, fontSize:20, color:"1F2D36", valign:"top", fit:"shrink" }); });
+    } else if (items.length) {
+      x.addText(items.map(v => ({ text:v, options:{ bullet:{ code:"25A0" }, paraSpaceAfter:10, breakLine:true } })), { x:0.8, y:1.6, w:11.8, h:5.0, fontFace:FONT, fontSize:22, color:"1F2D36", valign:"top", fit:"shrink", lineSpacingMultiple:1.1 });
+    }
+    x.addText(unit, { x:0.6, y:6.95, w:9, h:0.4, fontFace:FONT, fontSize:11, color:"7A8A96" });
+    x.addText(String(i + 2), { x:12.1, y:6.95, w:0.7, h:0.4, fontFace:FONT, fontSize:11, color:"7A8A96", align:"right" });
+    if (s.ghiChu) x.addNotes(s.ghiChu);
+  });
+  // kết
+  sl = pp.addSlide(); sl.background = { color:h(th.a) };
+  sl.addShape(pp.ShapeType.ellipse, { x:-2, y:3.5, w:6, h:6, fill:{ color:"FFFFFF", transparency:90 }, line:{ type:"none" } });
+  const kh = (p.content.khauHieu || [])[0] || (p.content.banner || {}).tieuDe || "";
+  if (kh) sl.addText(`“${kh}”`, { x:1, y:1.6, w:11.33, h:2.2, fontFace:FONT, fontSize:32, bold:true, italic:true, color:h(th.acc), align:"center", valign:"middle", fit:"shrink" });
+  sl.addText("Xin trân trọng cảm ơn!", { x:1, y:4.3, w:11.33, h:1, fontFace:FONT, fontSize:30, bold:true, color:"FFFFFF", align:"center" });
+  sl.addText(unit, { x:1, y:5.4, w:11.33, h:0.6, fontFace:FONT, fontSize:16, color:"E8F1F5", align:"center" });
+  const blob = await pp.write({ outputType:"blob" });
+  await saveFile(safeName("Trinh bay " + (tb.tieuDe || p.chuDe)) + ".pptx", blob);
+}
+
+/* ---------- Giao diện ---------- */
+function viewTT(){
+  const list = TT.list || [], p = ttCur();
+  const left = `<div class="panel stack" style="padding:14px"><div class="row between"><h2>Chủ đề tuyên truyền</h2><button class="btn sm primary" data-act="tt" data-a="new">+ Mới</button></div>
+    ${list.length ? `<div class="ttlist">${list.map(x => `<button class="ttli ${x.id === TT.id ? "on" : ""}" data-act="tt" data-a="open" data-id="${x.id}"><b>${esc(x.ten || x.chuDe || "Chủ đề chưa đặt tên")}</b><span class="small muted">${new Date(x.updatedAt || x.createdAt).toLocaleDateString("vi-VN")}${x.content ? " · đã soạn" : ""}</span></button>`).join("")}</div>` : `<p class="small muted" style="margin:0">Chưa có chủ đề nào. Bấm “+ Mới” để bắt đầu.</p>`}</div>`;
+  if (!p) return `<div class="row between"><div><div class="eyebrow">Truyền thông dân số</div><h1>Tuyên truyền</h1></div></div>
+    <div class="ttgrid">${left}<div class="panel empty"><b>Tạo sản phẩm tuyên truyền từ văn bản yêu cầu</b><span>Tải lên hoặc viết nội dung yêu cầu tuyên truyền (kế hoạch, công văn, hướng dẫn của cấp trên). Trang soạn khẩu hiệu, banner, tài liệu tập huấn và bản trình bày, anh/chị chỉnh sửa rồi tải tệp về.</span><button class="btn primary" data-act="tt" data-a="new">+ Chủ đề tuyên truyền mới</button></div></div>`;
+  const c = p.content, tabs = [["yc", "1. Yêu cầu"], ...(c ? [p.out.banner && ["banner", "Banner"], p.out.taiLieu && ["tailieu", "Tài liệu tập huấn"], p.out.trinhBay && ["trinhbay", "Bản trình bày"], ["tai", "Tải về"]].filter(Boolean) : [])];
+  if (!tabs.some(t => t[0] === TT.tab)) TT.tab = "yc";
+  return `<div class="row between"><div><div class="eyebrow">Truyền thông dân số</div><h1>${esc(p.ten || p.chuDe || "Chủ đề tuyên truyền mới")}</h1></div>
+      <div class="row"><button class="btn sm ghost danger" data-act="tt" data-a="del">Xóa chủ đề</button></div></div>
+    <div class="ttgrid">${left}<div class="stack" style="min-width:0">
+      <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${TT.tab === k}" data-act="tt" data-a="tab" data-v="${k}">${l}</button>`).join("")}</div>
+      ${TT.tab === "yc" ? ttTabYC(p) : TT.tab === "banner" ? ttTabBanner(p) : TT.tab === "tailieu" ? ttTabDoc(p) : TT.tab === "trinhbay" ? ttTabSlides(p) : ttTabDl(p)}
+    </div></div>`;
+}
+const ttIn = (path, val, ph="", cls="") => `<input class="inp ${cls}" data-tt="${path}" value="${esc(val ?? "")}" placeholder="${esc(ph)}">`;
+const ttTa = (path, val, rows=4, ph="") => `<textarea class="inp" rows="${rows}" data-tt="${path}" placeholder="${esc(ph)}">${esc(val ?? "")}</textarea>`;
+function ttTabYC(p){
+  const ai = !!cap.sample, st = ttStats();
+  return `<div class="split"><div class="stack" style="min-width:0">
+    <div class="panel stack"><h2>Nội dung yêu cầu tuyên truyền</h2>
+      <label class="drop" id="ttdrop" for="ttfile"><b>Tải văn bản yêu cầu</b><span class="small muted">Word (.doc, .docx), Excel, ảnh chụp văn bản, tệp .txt. Có thể chọn nhiều tệp.</span></label>
+      <input type="file" id="ttfile" multiple accept=".doc,.docx,.xls,.xlsx,.txt,image/*" hidden>
+      ${(p.nguon || []).length || TT.imgs.length ? `<div class="row small" style="gap:6px">${(p.nguon || []).map(n => `<span class="chip">${esc(n)}</span>`).join("")}${TT.imgs.length ? `<span class="chip acc">${TT.imgs.length} ảnh chờ đọc</span>` : ""}<button class="btn sm ghost" data-act="tt" data-a="clearsrc">Bỏ tệp</button></div>` : ""}
+      <div class="field"><label>Hoặc viết, dán nội dung yêu cầu</label>${ttTa("yeuCau", p.yeuCau, 10, "Ví dụ: Hưởng ứng Tháng hành động quốc gia về dân số, tuyên truyền về sinh đủ hai con, nuôi dạy con tốt; đối tượng là các cặp vợ chồng trẻ…")}</div>
+      <div class="field"><label>Gợi ý chủ đề</label><div class="row" style="gap:6px">${TT_LIB.map(L => `<button class="btn sm ${p.chuDe === L.ten ? "primary" : ""}" data-act="tt" data-a="topic" data-k="${L.k}">${esc(L.ten)}</button>`).join("")}</div></div>
+      <div class="grid2"><div class="field"><label>Chủ đề</label>${ttIn("chuDe", p.chuDe, "Tên chủ đề")}</div><div class="field"><label>Dịp, thời gian</label>${ttIn("dip", p.dip, "Ví dụ: Ngày Dân số Việt Nam 26/12/2026")}</div>
+        <div class="field"><label>Đối tượng</label>${ttIn("doiTuong", p.doiTuong)}</div><div class="field"><label>Phạm vi</label><select class="inp" data-tt="phamVi">${["Toàn xã", ...diaBans().filter(d => d.ten).map(d => "Địa bàn " + d.ten)].map(v => `<option ${p.phamVi === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></div>
+        <div class="field"><label>Người trình bày, biên soạn</label>${ttIn("nguoiTrinhBay", p.nguoiTrinhBay, "Họ và tên")}</div><div class="field"><label>Tên chủ đề trong danh sách</label>${ttIn("ten", p.ten, "Để trống: lấy theo chủ đề")}</div></div>
+    </div></div>
+    <div class="stack">
+      <div class="panel stack"><h2>Sản phẩm cần tạo</h2>
+        ${TT_OUT.map(([k, l, d]) => `<label class="ttopt"><input type="checkbox" data-ttout="${k}" ${p.out[k] ? "checked" : ""}><span><b>${l}</b><span class="small muted">${d}</span></span></label>`).join("")}
+        ${p.out.banner ? `<div class="field"><label>Khổ banner</label>${Object.entries(TT_SIZES).map(([k, z]) => `<label class="row small" style="gap:6px"><input type="checkbox" data-ttsize="${k}" ${p.sizes.includes(k) ? "checked" : ""}>${esc(z.ten)}</label>`).join("")}</div>` : ""}
+        ${p.out.trinhBay ? `<div class="field"><label>Số trang nội dung của bản trình bày</label><input class="inp" type="number" min="4" max="25" data-tt="soTrang" data-num="1" value="${p.soTrang || 10}" style="width:100px"></div>` : ""}
+        <div class="field"><label>Màu chủ đạo</label><div class="row" style="gap:6px">${Object.entries(TT_THEMES).map(([k, t]) => `<button class="ttsw ${p.theme === k ? "on" : ""}" data-act="tt" data-a="theme" data-v="${k}" title="${esc(t.ten)}" style="background:linear-gradient(135deg,${t.a},${t.b})"><span>${esc(t.ten)}</span></button>`).join("")}</div></div>
+        ${st ? `<label class="row small" style="gap:6px;align-items:flex-start"><input type="checkbox" data-tt="soLieu" data-bool="1" ${p.soLieu ? "checked" : ""}><span>Đưa số liệu của xã (${esc(st.ky)}) vào nội dung</span></label>` : ""}
+      </div>
+      <div class="panel stack"><h2>Soạn nội dung</h2>
+        ${TT.busy ? `<div class="status"><span class="spin"></span>Claude đang soạn khẩu hiệu, tài liệu và bản trình bày… thường mất 1–2 phút.</div>` : `
+        <button class="btn primary" data-act="tt" data-a="gen-ai" ${ai ? "" : "disabled"}>Soạn bằng Claude</button>
+        <button class="btn" data-act="tt" data-a="gen-lib">Soạn theo mẫu có sẵn</button>`}
+        <p class="small muted" style="margin:0">${ai ? "Claude đọc văn bản yêu cầu (cả ảnh) và soạn riêng cho chủ đề." : "Trợ lý Claude chưa sẵn sàng ở chế độ xem này" + (window.__STANDALONE ? " (nhập khóa API ở Thông tin cơ quan để bật)" : "") + "."} “Mẫu có sẵn” dùng thư viện ${TT_LIB.length} chủ đề dân số kèm khẩu hiệu trong văn bản yêu cầu; không cần mạng. Nội dung nào cũng có thể sửa trước khi tải.</p>
+      </div></div></div>`;
+}
+function ttTabBanner(p){
+  const c = p.content, sizes = p.sizes.length ? p.sizes : ["ngang"];
+  return `<div class="split"><div class="stack" style="min-width:0">${sizes.map(k => `<div class="panel stack"><div class="row between"><h3>${esc(TT_SIZES[k].ten)}</h3><span class="small muted">${TT_SIZES[k].w} × ${TT_SIZES[k].h} px</span></div>
+      <div class="ttcvw"><canvas data-ttcv="${k}"></canvas></div><div class="row"><button class="btn sm primary" data-act="tt" data-a="png" data-v="${k}">Tải ảnh PNG</button></div></div>`).join("")}</div>
+    <div class="stack"><div class="panel stack"><h2>Nội dung banner</h2>
+      <div class="field"><label>Khẩu hiệu chính (in to)</label>${ttTa("content.banner.tieuDe", c.banner.tieuDe, 2)}</div>
+      <div class="field"><label>Dòng phụ</label>${ttTa("content.banner.phuDe", c.banner.phuDe, 2)}</div>
+      <div class="field"><label>Dòng cuối (đơn vị, dịp)</label>${ttIn("content.banner.dongCuoi", c.banner.dongCuoi)}</div>
+      <div class="field"><label>Khổ banner</label>${Object.entries(TT_SIZES).map(([k, z]) => `<label class="row small" style="gap:6px"><input type="checkbox" data-ttsize="${k}" ${p.sizes.includes(k) ? "checked" : ""}>${esc(z.ten)}</label>`).join("")}</div>
+      <div class="field"><label>Màu chủ đạo</label><div class="row" style="gap:6px">${Object.entries(TT_THEMES).map(([k, t]) => `<button class="ttsw ${p.theme === k ? "on" : ""}" data-act="tt" data-a="theme" data-v="${k}" style="background:linear-gradient(135deg,${t.a},${t.b})"><span>${esc(t.ten)}</span></button>`).join("")}</div></div></div>
+      <div class="panel stack"><h2>Khẩu hiệu</h2><p class="small muted" style="margin:0">Mỗi dòng một khẩu hiệu. Bấm “Dùng” để đưa lên banner.</p>
+        ${ttTa("content.khauHieu", (c.khauHieu || []).join("\n"), 6)}
+        <div class="stack" style="gap:4px">${(c.khauHieu || []).map((k, i) => `<div class="row between small" style="gap:6px;flex-wrap:nowrap"><span>${esc(k)}</span><button class="btn sm ghost" data-act="tt" data-a="usekh" data-i="${i}">Dùng</button></div>`).join("")}</div></div></div></div>`;
+}
+function ttTabDoc(p){
+  const t = p.content.taiLieu;
+  return `<div class="stack"><div class="panel stack"><div class="row between"><h2>Tài liệu tập huấn</h2><button class="btn sm primary" data-act="tt" data-a="docx">Tải tệp Word</button></div>
+      <div class="grid3"><div class="field"><label>Tên tài liệu</label>${ttIn("content.taiLieu.tieuDe", t.tieuDe)}</div><div class="field"><label>Đối tượng</label>${ttIn("content.taiLieu.doiTuong", t.doiTuong)}</div><div class="field"><label>Thời lượng</label>${ttIn("content.taiLieu.thoiLuong", t.thoiLuong)}</div></div>
+      <div class="field"><label>Mục tiêu (mỗi dòng một mục tiêu)</label>${ttTa("content.taiLieu.mucTieu", t.mucTieu.join("\n"), 3)}</div></div>
+    ${t.phan.map((x, i) => `<div class="panel stack"><div class="row between"><div class="row" style="gap:8px;flex:1;flex-wrap:nowrap"><b>${i + 1}.</b>${ttIn(`content.taiLieu.phan.${i}.tieuDe`, x.tieuDe, "Tên phần")}</div>
+        <div class="row" style="gap:4px"><button class="btn sm ghost" data-act="tt" data-a="mv" data-list="taiLieu.phan" data-i="${i}" data-d="-1" ${i ? "" : "disabled"} aria-label="Lên">↑</button><button class="btn sm ghost" data-act="tt" data-a="mv" data-list="taiLieu.phan" data-i="${i}" data-d="1" ${i < t.phan.length - 1 ? "" : "disabled"} aria-label="Xuống">↓</button><button class="btn sm ghost danger" data-act="tt" data-a="rm" data-list="taiLieu.phan" data-i="${i}" aria-label="Xóa">✕</button></div></div>
+      ${ttTa(`content.taiLieu.phan.${i}.body`, x.body, Math.min(14, Math.max(4, ttLines(x.body).length + 1)), "Đoạn văn mỗi dòng; ý liệt kê bắt đầu bằng dấu -")}</div>`).join("")}
+    <div class="row"><button class="btn sm" data-act="tt" data-a="add" data-list="taiLieu.phan">+ Thêm phần</button></div>
+    <div class="panel stack"><h2>Câu hỏi ôn tập</h2>${(t.cauHoi || []).map((q, i) => `<div class="grid2"><div class="field"><label>Câu ${i + 1}</label>${ttIn(`content.taiLieu.cauHoi.${i}.hoi`, q.hoi)}</div><div class="field"><label>Gợi ý trả lời</label><div class="row" style="flex-wrap:nowrap;gap:4px">${ttIn(`content.taiLieu.cauHoi.${i}.dapAn`, q.dapAn)}<button class="btn sm ghost danger" data-act="tt" data-a="rm" data-list="taiLieu.cauHoi" data-i="${i}" aria-label="Xóa">✕</button></div></div></div>`).join("")}
+      <div class="row"><button class="btn sm" data-act="tt" data-a="add" data-list="taiLieu.cauHoi">+ Thêm câu hỏi</button></div></div></div>`;
+}
+function ttTabSlides(p){
+  const tb = p.content.trinhBay, th = TT_THEMES[p.theme] || TT_THEMES.yte;
+  const thumb = (title, items, n) => `<div class="ttth" style="--a:${th.a};--acc:${th.acc}"><div class="ttth-h">${esc(title)}</div><ul>${items.slice(0, 5).map(v => `<li>${esc(v)}</li>`).join("")}</ul><span class="ttth-n">${n}</span></div>`;
+  return `<div class="stack"><div class="panel stack"><div class="row between"><h2>Bản trình bày · ${tb.slides.length + 2} trang</h2><button class="btn sm primary" data-act="tt" data-a="pptx">Tải tệp PowerPoint</button></div>
+      <div class="grid2"><div class="field"><label>Tiêu đề trang bìa</label>${ttIn("content.trinhBay.tieuDe", tb.tieuDe)}</div><div class="field"><label>Dòng phụ trang bìa</label>${ttIn("content.trinhBay.phuDe", tb.phuDe)}</div></div>
+      <p class="small muted" style="margin:0">Trang bìa có tên đơn vị, người trình bày; trang kết có khẩu hiệu đầu tiên và lời cảm ơn. Trang có 1–3 ý ngắn được trình bày dạng thẻ, nhiều ý hơn dạng gạch đầu dòng. Lời thuyết trình nằm trong phần ghi chú của PowerPoint.</p></div>
+    ${tb.slides.map((s, i) => `<div class="panel ttsl"><div>${thumb(s.tieuDe, s.y || [], i + 2)}</div><div class="stack" style="min-width:0;gap:8px">
+        <div class="row" style="flex-wrap:nowrap;gap:6px">${ttIn(`content.trinhBay.slides.${i}.tieuDe`, s.tieuDe, "Tiêu đề trang")}<button class="btn sm ghost" data-act="tt" data-a="mv" data-list="trinhBay.slides" data-i="${i}" data-d="-1" ${i ? "" : "disabled"} aria-label="Lên">↑</button><button class="btn sm ghost" data-act="tt" data-a="mv" data-list="trinhBay.slides" data-i="${i}" data-d="1" ${i < tb.slides.length - 1 ? "" : "disabled"} aria-label="Xuống">↓</button><button class="btn sm ghost danger" data-act="tt" data-a="rm" data-list="trinhBay.slides" data-i="${i}" aria-label="Xóa">✕</button></div>
+        <div class="field"><label>Các ý (mỗi dòng một ý, tối đa 5–6 ý)</label>${ttTa(`content.trinhBay.slides.${i}.y`, (s.y || []).join("\n"), Math.max(3, (s.y || []).length + 1))}</div>
+        <details><summary class="small">Lời thuyết trình</summary>${ttTa(`content.trinhBay.slides.${i}.ghiChu`, s.ghiChu, 3)}</details></div></div>`).join("")}
+    <div class="row"><button class="btn sm" data-act="tt" data-a="add" data-list="trinhBay.slides">+ Thêm trang</button></div></div>`;
+}
+function ttTabDl(p){
+  const rows = [];
+  if (p.out.banner) for (const k of (p.sizes.length ? p.sizes : ["ngang"])) rows.push([`Banner: ${TT_SIZES[k].ten}`, "PNG", `data-a="png" data-v="${k}"`]);
+  if (p.out.taiLieu) rows.push(["Tài liệu tập huấn", "Word .docx", `data-a="docx"`]);
+  if (p.out.trinhBay) rows.push([`Bản trình bày (${p.content.trinhBay.slides.length + 2} trang)`, "PowerPoint .pptx", `data-a="pptx"`]);
+  return `<div class="panel stack"><h2>Tải các tệp kết quả</h2><p class="small muted" style="margin:0">Nội dung lấy theo bản đã chỉnh sửa ở các thẻ trước. ${esc(p.content.nguon ? "Nguồn soạn: " + p.content.nguon + "." : "")}</p>
+    <div class="tblwrap"><table class="rv"><thead><tr><th>Sản phẩm</th><th>Định dạng</th><th></th></tr></thead><tbody>${rows.map(([a, b, c]) => `<tr><td>${esc(a)}</td><td class="small muted">${b}</td><td class="n"><button class="btn sm primary" data-act="tt" ${c}>Tải về</button></td></tr>`).join("")}</tbody></table></div>
+    <div class="row"><button class="btn primary" data-act="tt" data-a="all">Tải tất cả (${rows.length} tệp)</button></div>
+    <p class="small muted" style="margin:0">Trước khi in, treo hoặc phát hành: kiểm tra lại số liệu, tên văn bản và khẩu hiệu theo hướng dẫn của cấp trên.</p></div>`;
+}
+function afterTT(){
+  const p = ttCur(); if (!p) return;
+  const fi = $("#ttfile"), drop = $("#ttdrop");
+  if (fi) { fi.addEventListener("change", () => { ttAddFiles(Array.from(fi.files)); fi.value = ""; });
+    drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); }); drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+    drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); ttAddFiles(Array.from(e.dataTransfer.files)); }); }
+  const m = $("#main");
+  const onEdit = e => { const el = e.target;
+    if (el.dataset.tt) { const path = el.dataset.tt; let v = el.type === "checkbox" ? el.checked : el.value;
+      if (el.dataset.num) v = Math.max(4, Math.min(25, parseInt(v, 10) || 10));
+      if (/^content\.khauHieu$|\.mucTieu$|\.y$/.test(path)) v = ttLines(v);
+      ttSet(p, path, v); ttSaveSoon(p);
+      if (path.startsWith("content.banner") || path === "content.khauHieu") ttRedrawSoon();
+      if (e.type === "change" && (path === "content.khauHieu" || el.tagName === "SELECT" || el.type === "checkbox")) render();
+      if (/^content\.trinhBay\.slides\.\d+\.(tieuDe|y)$/.test(path)) { const card = el.closest(".ttsl"); const i = +path.split(".")[3], s = p.content.trinhBay.slides[i]; const t = card && card.querySelector(".ttth"); if (t) { t.querySelector(".ttth-h").textContent = s.tieuDe; t.querySelector("ul").innerHTML = (s.y || []).slice(0, 5).map(v => `<li>${esc(v)}</li>`).join(""); } }
+      if (path === "ten" || path === "chuDe") { const h = $("#main h1"); if (h) h.textContent = p.ten || p.chuDe || "Chủ đề tuyên truyền mới"; }
+    }
+    if (el.dataset.ttout && e.type === "change") { p.out[el.dataset.ttout] = el.checked; ttSaveSoon(p); render(); }
+    if (el.dataset.ttsize && e.type === "change") { p.sizes = $$("[data-ttsize]").filter(x => x.checked).map(x => x.dataset.ttsize); ttSaveSoon(p); render(); }
+  };
+  m.addEventListener("input", onEdit); m.addEventListener("change", onEdit);
+  if (TT.tab === "banner" || TT.tab === "tai") ttRedraw();
+}
+const ttRedrawSoon = debounce(ttRedraw, 250);
+async function ttAct(b){
+  const a = b.dataset.a, p = ttCur();
+  const listOf = path => ttGet(p.content, path);
+  const run = async (fn, label) => { const old = b.textContent; b.disabled = true; b.textContent = "Đang tạo…"; try { await fn(); } catch(e){ toast("Không tạo được " + label + ": " + (e && e.message || e), true); } b.disabled = false; b.textContent = old; };
+  switch(a){
+    case "new": { const n = ttNew(); TT.list.unshift(n); TT.id = n.id; TT.tab = "yc"; TT.imgs = []; await store.put("tuyentruyen", n); render(); window.scrollTo(0, 0); break; }
+    case "open": TT.id = b.dataset.id; TT.tab = ttCur().content ? "tai" : "yc"; TT.imgs = []; render(); window.scrollTo(0, 0); break;
+    case "del": if (p && await confirmBox(`Xóa chủ đề “${p.ten || p.chuDe || "chưa đặt tên"}”?`, "Xóa", true)) { TT.list = TT.list.filter(x => x !== p); await store.del("tuyentruyen", p.id); TT.id = null; render(); } break;
+    case "tab": TT.tab = b.dataset.v; render(); break;
+    case "topic": { const L = TT_LIB.find(x => x.k === b.dataset.k); p.chuDe = L.ten; ttSaveSoon(p); render(); break; }
+    case "theme": p.theme = b.dataset.v; ttSaveSoon(p); render(); break;
+    case "clearsrc": p.nguon = []; TT.imgs = []; ttSaveSoon(p); render(); break;
+    case "gen-ai": ttGenerate(true); break;
+    case "gen-lib": ttGenerate(false); break;
+    case "usekh": p.content.banner.tieuDe = p.content.khauHieu[+b.dataset.i]; ttSaveSoon(p); render(); break;
+    case "mv": { const L = listOf(b.dataset.list), i = +b.dataset.i, j = i + +b.dataset.d; if (j < 0 || j >= L.length) break; [L[i], L[j]] = [L[j], L[i]]; ttSaveSoon(p); render(); break; }
+    case "rm": { const L = listOf(b.dataset.list); L.splice(+b.dataset.i, 1); ttSaveSoon(p); render(); break; }
+    case "add": { const L = listOf(b.dataset.list); L.push(b.dataset.list === "taiLieu.cauHoi" ? { hoi:"", dapAn:"" } : b.dataset.list === "taiLieu.phan" ? { tieuDe:"", body:"" } : { tieuDe:"", y:[], ghiChu:"" }); ttSaveSoon(p); render(); break; }
+    case "png": await run(() => ttPng(b.dataset.v), "ảnh banner"); break;
+    case "docx": await run(ttDocx, "tài liệu Word"); break;
+    case "pptx": await run(ttPptx, "bản trình bày"); break;
+    case "all": await run(async () => { if (p.out.banner) for (const k of (p.sizes.length ? p.sizes : ["ngang"])) await ttPng(k); if (p.out.taiLieu) await ttDocx(); if (p.out.trinhBay) await ttPptx(); }, "tệp"); break;
+  }
+}
+
 /* ===================== Điều hướng & hiển thị ===================== */
 function setNav(){
-  const map = { report:"reports", tpledit:"templates" };
+  const map = { report:"reports", tpledit:"templates" }; const HUB = ["reports","report","diaban","solieu"];
   const s0 = S.settings; $("#brand-name").textContent = s0.donViBieu || [s0.coQuan, s0.chuQuan].filter(Boolean).join(" ") || "Trạm Y tế";
   $("#crumb").innerHTML = `<span>${esc(s0.donViBieu || "Trạm Y tế")}</span><span>/</span><b>${esc(VIEW_NAMES[S.view] || "")}</b>`;
   const d = new Date(); $("#topstat").innerHTML = `<span>${["Chủ nhật","Thứ hai","Thứ ba","Thứ tư","Thứ năm","Thứ sáu","Thứ bảy"][d.getDay()]}, ${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}</span>${window.__STANDALONE && S.authInfo ? `<span class="chip">${esc(S.authInfo.ten || S.authInfo.user)}</span><button class="btn sm" data-act="sa-logout">Đăng xuất</button>` : ""}${window.__MODE === "fb" ? `<span class="chip ok">● Dùng chung</span>` : window.__STANDALONE ? `<span class="chip ok">● Lưu trên máy này</span>` : cap.access === "ok" ? `<span class="chip ok">● Đã kết nối dữ liệu</span>` : cap.access ? `<span class="chip warn">Chưa xem được dữ liệu</span>` : ""}`;
-  $$("#nav button").forEach(b => b.setAttribute("aria-current", String(b.dataset.v === (map[S.view] || S.view))));
+  $$("#nav button").forEach(b => b.setAttribute("aria-current", String(b.dataset.v === "hub" ? HUB.includes(S.view) : b.dataset.v === (map[S.view] || S.view))));
+  $("#navsub")?.classList.toggle("open", HUB.includes(S.view));
+  const ntt = $("#n-tt"); if (ntt) ntt.textContent = TT.list && TT.list.length ? TT.list.length : "";
+  if (HUB.includes(S.view)) S.hubLast = map[S.view] || S.view;
   $("#n-rep").textContent = S.reports.length || "";
   $("#n-tpl").textContent = S.templates.length || "";
   $("#n-sl").textContent = S.solieu.length || "";
@@ -1044,7 +1570,14 @@ function render(){
   else if (S.view === "templates") m.innerHTML = viewTemplates();
   else if (S.view === "tpledit") m.innerHTML = viewTplEdit();
   else if (S.view === "settings") m.innerHTML = viewSettings();
+  else if (S.view === "tuyentruyen") { m.innerHTML = viewTT(); afterTT(); }
+  if (["reports","report","diaban","solieu"].includes(S.view)) m.insertAdjacentHTML("afterbegin", hubBar());
   const ab = accessBanner(); if (ab) m.insertAdjacentHTML("afterbegin", ab);
+}
+function hubBar(){
+  const cur = S.view === "report" ? "reports" : S.view;
+  const T = [["reports","Kỳ báo cáo","Chọn kỳ tùy chỉnh, điền biểu, xuất Excel theo mẫu và báo cáo Word theo NĐ 30"],["diaban","Theo địa bàn","Số liệu 6 địa bàn, mốc thời gian tùy chỉnh, xuất Excel/Word"],["solieu","Đã gửi cấp trên","Biểu 01 hằng tháng, lũy kế, đối chiếu và sửa chỗ lệch"]];
+  return `<div class="hubbar" role="tablist" aria-label="Số liệu báo cáo">${T.map(([k, l, d]) => `<button role="tab" aria-selected="${cur === k}" data-act="nav" data-v="${k}"><b>${l}</b><span>${d}</span></button>`).join("")}</div>`;
 }
 function go(view, extra={}){ Object.assign(S, {view}, extra); render(); window.scrollTo(0,0); }
 
@@ -2059,7 +2592,7 @@ const ICONS = {
   settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'
 };
 const ico = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
-const VIEW_NAMES = { home:"Tổng quan", phieu:"Phiếu thu tin CTV", solieu:"Số liệu đã báo cáo", diaban:"Số liệu theo địa bàn", reports:"Kỳ báo cáo", report:"Kỳ báo cáo", templates:"Biểu mẫu", tpledit:"Biểu mẫu", settings:"Thông tin cơ quan" };
+const VIEW_NAMES = { home:"Tổng quan", phieu:"Báo cáo / Phiếu thu thập", solieu:"Số liệu báo cáo / Đã gửi cấp trên", diaban:"Số liệu báo cáo / Theo địa bàn", reports:"Số liệu báo cáo / Kỳ báo cáo", report:"Số liệu báo cáo / Kỳ báo cáo", tuyentruyen:"Tuyên truyền", templates:"Biểu mẫu", tpledit:"Biểu mẫu", settings:"Thông tin cơ quan" };
 
 /* ===================== KỲ BÁO CÁO ===================== */
 function viewReports(){
@@ -2577,7 +3110,7 @@ async function saveFile(filename, data){
   try { await cap.downloads.save({ filename, data }); toast("Đã tải " + filename); }
   catch(e){ if (e && e.code === "declined") return; toast(e && e.code === "rate_limited" ? "Đang có hộp thoại tải tệp mở. Hoàn tất hộp thoại đó trước." : "Không tải được tệp (" + (e && e.code || "lỗi") + ").", true); }
 }
-const safeName = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").replace(/[\\/:*?"<>|]+/g,"-").replace(/\s+/g," ").trim().slice(0,120);
+const safeName = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").replace(/×/g,"x").replace(/[\\/:*?"<>|]+/g,"-").replace(/[^\x20-\x7E]/g,"").replace(/\s+/g," ").trim().slice(0,120);
 function unitName(rep){ const s = S.settings, base = s.donViBieu || [s.coQuan, s.chuQuan].filter(Boolean).join(" - "); return rep && rep.scope ? `${base} (địa bàn ${rep.scope})` : base; }
 function bieuPeriodText(rep){
   if (rep.period.type === "ngay") return rangeLabel(repRange(rep)).toUpperCase();
@@ -2976,7 +3509,8 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act, rep = curRep();
   switch(act){
-    case "nav": tplDraft = null; if (b.dataset.v === "phieu") await store.loadYear(S.pY); if (b.dataset.v === "diaban") { if (!S.dv) S.dv = dvInit(); await loadRange(dvR()); } go(b.dataset.v); break;
+    case "tt": await ttAct(b); break;
+    case "nav": { tplDraft = null; const v = b.dataset.v === "hub" ? (S.hubLast || "reports") : b.dataset.v; if (v === "tuyentruyen") await ttLoad(); if (v === "phieu") await store.loadYear(S.pY); if (v === "diaban") { if (!S.dv) S.dv = dvInit(); await loadRange(dvR()); } go(v); break; }
     case "openrep": { const r = S.reports.find(x => x.id === b.dataset.id); if (r) { repTpl(r); await loadRange(repRange(r)); } go("report", { repId:b.dataset.id, tab:"data" }); break; }
     case "tab": S.tab = b.dataset.v; render(); break;
     case "gophieu": S.pM = +b.dataset.m; S.pY = +b.dataset.y; await store.loadYear(S.pY); go("phieu"); break;

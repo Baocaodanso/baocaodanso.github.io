@@ -316,6 +316,15 @@ table.g td.v.sum input{background:var(--sum)}
 table.g td.v.auto input{background:var(--auto);color:var(--auto-ink);font-weight:600}
 table.g td.v.f{background:var(--calc);text-align:right;padding:7px 10px;color:var(--muted);font-weight:500}
 table.g td.v.hl{animation:hl 1.6s ease-out}
+.ckl{display:flex;flex-direction:column}
+.cki{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.cki:first-child{border-top:0;padding-top:2px}
+tr.slhl td{background:var(--warn-soft)!important}
+tr.slhl td:first-child{box-shadow:inset 3px 0 0 var(--warn);font-weight:600}
+.cellbtn{all:unset;cursor:pointer;display:inline-block;min-width:22px;text-align:right;padding:1px 4px;border-radius:4px;font-variant-numeric:tabular-nums}
+.cellbtn:hover{background:var(--accent-soft);color:var(--accent);text-decoration:underline}
+.cellbtn:focus-visible{outline:2px solid var(--accent)}
+.sledt input.slin{width:72px;height:30px;padding:0 6px;text-align:right}
 @keyframes hl{from{box-shadow:inset 0 0 0 2px var(--ok)}to{box-shadow:inset 0 0 0 2px transparent}}
 @media (prefers-reduced-motion:reduce){table.g td.v.hl{animation:none}}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
@@ -1728,7 +1737,7 @@ function slChecks(y){
   const mon = Object.fromEntries(slMonthly(y).map(d => [d.from, d])), out = [];
   for (const d of slMonthly(y)) if (d.perDb) {
     const bad = B01_KEYS.filter(k => d.toanXa[k] != null && Object.values(d.perDb).reduce((a, v) => a + (v[k] || 0), 0) !== d.toanXa[k]);
-    out.push({ kind:"sum", label:`Tháng ${pad2(d.from)}: cộng 6 địa bàn so với Toàn xã`, ok: !bad.length, items: bad.map(k => `${B01_NAMES[k]}: Toàn xã ${d.toanXa[k]}, cộng địa bàn ${Object.values(d.perDb).reduce((a, v) => a + (v[k] || 0), 0)}`) });
+    out.push({ kind:"sum", label:`Tháng ${pad2(d.from)}: cộng 6 địa bàn so với Toàn xã`, ok: !bad.length, items: bad.map(k => { const s = Object.values(d.perDb).reduce((a, v) => a + (v[k] || 0), 0); return { k, id:d.id, mon:d.from, fix:s, text:`${B01_NAMES[k]}: Toàn xã ${d.toanXa[k]}, cộng địa bàn ${s}` }; }) });
   }
   for (const d of slLuyke(y)) {
     if (d.from !== 1 || ![...Array(d.to).keys()].every(i => mon[i+1])) continue;
@@ -1736,7 +1745,7 @@ function slChecks(y){
     for (const k of B01_KEYS) {
       const r = d.toanXa[k]; if (r == null) continue;
       const cum = STOCK_KEYS.has(k) ? mon[d.to].toanXa[k] : Array.from({length:d.to}, (_,i) => mon[i+1].toanXa[k] || 0).reduce((a,b) => a + b, 0);
-      if (cum != null && cum !== r) items.push(`${B01_NAMES[k]}: lũy kế đã báo cáo ${r}, cộng dồn hằng tháng ${cum} (lệch ${r - cum > 0 ? "+" : ""}${r - cum})`);
+      if (cum != null && cum !== r) items.push({ k, id:d.id, to:d.to, fix:cum, stock:STOCK_KEYS.has(k), mons: STOCK_KEYS.has(k) ? [d.to] : Array.from({length:d.to}, (_,i) => i+1).filter(i => mon[i].toanXa[k]), text:`${B01_NAMES[k]}: lũy kế đã báo cáo ${r}, cộng dồn hằng tháng ${cum} (lệch ${r - cum > 0 ? "+" : ""}${r - cum})` });
     }
     out.push({ kind:"lk", label:`Lũy kế tháng 01–${pad2(d.to)} so với cộng dồn hằng tháng`, ok: !items.length, items });
   }
@@ -1752,7 +1761,7 @@ function viewSoLieu(){
     <div class="split">
       <div class="stack" style="min-width:0">
         <div class="tabs" role="tablist">${tabs.map(([k,l]) => `<button role="tab" aria-selected="${tab===k}" data-act="sltab" data-v="${k}">${l}</button>`).join("")}</div>
-        <div>${tab === "thang" ? slTabThang(y, mons) : tab === "luyke" ? slTabLuyke(y, lks) : tab === "doichieu" ? slTabCheck(checks) : tab === "chitieu" ? slTabChiTieu(y, ct) : slTabNguon(y)}</div>
+        <div>${S.slEd ? slTabEdit() : tab === "thang" ? slTabThang(y, mons) : tab === "luyke" ? slTabLuyke(y, lks) : tab === "doichieu" ? slTabCheck(checks) : tab === "chitieu" ? slTabChiTieu(y, ct) : slTabNguon(y)}</div>
       </div>
       <div class="stack">
         <div class="panel stack"><div><h2>Nhập tệp số liệu</h2><p class="small muted" style="margin:4px 0 0">Excel (.xls, .xlsx) theo mẫu Biểu 01-DSX (hằng tháng theo địa bàn hoặc lũy kế từ tháng 1) và bảng chỉ tiêu giao. Trang đọc đúng từng ô, không qua suy đoán.</p></div>
@@ -1774,24 +1783,88 @@ function slTabThang(y, mons){
   return `<div class="stack">
     <div class="panel stack"><div class="row between"><h2>Cả năm ${y}, toàn xã theo tháng</h2><span class="small muted">Cộng dồn: tổng các tháng; riêng "đang mang thai" lấy tháng gần nhất</span></div>
       <div class="tblwrap"><table class="rv"><thead><tr><th>Chỉ tiêu</th>${mons.map(d => `<th class="n"><button class="btn sm ghost" style="padding:0 4px" data-act="slm" data-v="${d.from}">T${d.from}</button></th>`).join("")}<th class="n">Cộng dồn</th></tr></thead>
-      <tbody>${B01_KEYS.map(k => `<tr><td class="nw">${esc(B01_NAMES[k])}</td>${mons.map(d => `<td class="n" style="${d.from===sel.from?"background:var(--accent-soft)":""}">${d.toanXa[k] ?? ""}</td>`).join("")}<td class="n"><b>${cum[k] ?? ""}</b></td></tr>`).join("")}</tbody></table></div></div>
+      <tbody>${B01_KEYS.map(k => `<tr data-k="${k}" class="${S.slHi && S.slHi.k === k ? "slhl" : ""}"><td class="nw">${esc(B01_NAMES[k])}</td>${mons.map(d => { const hm = S.slHi && S.slHi.k === k && (S.slHi.ms || []).includes(d.from); return `<td class="n" style="${hm ? "background:var(--warn-soft);font-weight:700" : d.from===sel.from?"background:var(--accent-soft)":""}"><button class="cellbtn" data-act="sled" data-id="${d.id}" data-k="${k}" title="Sửa tháng ${d.from}">${d.toanXa[k] ?? "·"}</button></td>`; }).join("")}<td class="n"><b>${cum[k] ?? ""}</b></td></tr>`).join("")}</tbody></table></div>
+      <p class="small muted" style="margin:0">Bấm vào một số để sửa bảng của tháng đó.</p></div>
     <div class="panel stack"><div class="row between"><h2>Tháng ${pad2(sel.from)}/${y} theo địa bàn</h2><div class="row" style="gap:4px">${mons.map(d => `<button class="btn sm ${d.from===sel.from?"primary":""}" data-act="slm" data-v="${d.from}">T${d.from}</button>`).join("")}</div></div>
       ${dbs.length ? `<div class="tblwrap"><table class="rv"><thead><tr><th>Chỉ tiêu</th>${dbs.map(db => `<th class="n">${esc(db)}</th>`).join("")}<th class="n">Cộng địa bàn</th><th class="n">Toàn xã</th></tr></thead>
-        <tbody>${B01_KEYS.map(k => { const s = dbs.reduce((a, db) => a + (sel.perDb[db][k] || 0), 0), t = sel.toanXa[k]; return `<tr><td class="nw">${esc(B01_NAMES[k])}</td>${dbs.map(db => `<td class="n">${sel.perDb[db][k] || ""}</td>`).join("")}<td class="n">${s}</td><td class="n" style="${t != null && t !== s ? "color:var(--danger);font-weight:700" : ""}">${t ?? ""}</td></tr>`; }).join("")}</tbody></table></div>`
+        <tbody>${B01_KEYS.map(k => { const s = dbs.reduce((a, db) => a + (sel.perDb[db][k] || 0), 0), t = sel.toanXa[k]; return `<tr data-k="${k}" class="${S.slHi && S.slHi.k === k ? "slhl" : ""}"><td class="nw">${esc(B01_NAMES[k])}</td>${dbs.map(db => `<td class="n">${sel.perDb[db][k] || ""}</td>`).join("")}<td class="n">${s}</td><td class="n" style="${t != null && t !== s ? "color:var(--danger);font-weight:700" : ""}">${t ?? ""}</td></tr>`; }).join("")}</tbody></table></div>`
         : `<p class="muted small" style="margin:0">Tệp tháng này không chia theo địa bàn.</p>`}
-      <div class="row small muted" style="gap:8px"><span>Nguồn: ${esc((sel.nguon||[]).join("; "))}</span><button class="btn sm ghost danger" data-act="sldel" data-id="${sel.id}">Xóa số liệu tháng này</button></div></div></div>`;
+      <div class="row small muted" style="gap:8px"><span>Nguồn: ${esc((sel.nguon||[]).join("; "))}</span><button class="btn sm" data-act="sled" data-id="${sel.id}">Sửa số liệu tháng này</button><button class="btn sm ghost danger" data-act="sldel" data-id="${sel.id}">Xóa số liệu tháng này</button></div></div></div>`;
 }
 function slTabLuyke(y, lks){
   if (!lks.length) return `<div class="panel empty"><b>Chưa có Biểu 01 lũy kế năm ${y}</b><span>Nhập tệp Excel ở khung bên phải.</span></div>`;
   return `<div class="panel stack"><h2>Biểu 01-DSX lũy kế đã gửi cấp trên, năm ${y}</h2>
-    <div class="tblwrap"><table class="rv"><thead><tr><th>Chỉ tiêu</th>${lks.map(d => `<th class="n" title="${esc((d.nguon||[]).join("; "))}">T${pad2(d.from)}–T${pad2(d.to)}</th>`).join("")}</tr></thead>
-    <tbody>${B01_KEYS.map(k => `<tr><td class="nw">${esc(B01_NAMES[k])}</td>${lks.map(d => `<td class="n">${d.toanXa[k] ?? ""}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    <div class="tblwrap"><table class="rv"><thead><tr><th>Chỉ tiêu</th>${lks.map(d => `<th class="n" title="${esc((d.nguon||[]).join("; "))}">T${pad2(d.from)}–T${pad2(d.to)}<br><button class="btn sm ghost" style="height:22px;padding:0 6px;margin-top:2px" data-act="sled" data-id="${d.id}">Sửa</button></th>`).join("")}</tr></thead>
+    <tbody>${B01_KEYS.map(k => `<tr><td class="nw">${esc(B01_NAMES[k])}</td>${lks.map(d => `<td class="n"><button class="cellbtn" data-act="sled" data-id="${d.id}" data-k="${k}">${d.toanXa[k] ?? "·"}</button></td>`).join("")}</tr>`).join("")}</tbody></table></div>
     ${lks.filter(d => d.banCu && d.banCu.length).map(d => `<div class="notice">Kỳ T${pad2(d.from)}–T${pad2(d.to)}: có ${d.banCu.length} bản khác. Đang dùng bản ${esc(d.nguon[0] || "")} (${esc(d.ghiChu || "")}); bản cũ: ${d.banCu.map(b => `${esc(b.nguon)} (tổng số trẻ sinh ${b.toanXa.sinh_tong ?? "?"})`).join("; ")}.</div>`).join("")}
     <p class="small muted" style="margin:0">Tạo kỳ báo cáo trùng kỳ lũy kế ở mục Kỳ báo cáo, rồi bấm "Dùng số đã báo cáo" để lấy đúng các số này.</p></div>`;
 }
 function slTabCheck(checks){
   if (!checks.length) return `<div class="panel empty"><b>Chưa đủ số liệu để đối chiếu</b><span>Cần Biểu 01 hằng tháng và lũy kế của cùng năm.</span></div>`;
-  return `<div class="stack">${checks.map(c => `<div class="panel stack" style="padding:12px 16px"><div class="row between"><b>${esc(c.label)}</b><span class="chip ${c.ok?"ok":"warn"}">${c.ok ? "Khớp" : c.items.length + " chỉ tiêu lệch"}</span></div>${c.ok ? "" : `<ul class="small" style="margin:0;padding-left:18px">${c.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`}</div>`).join("")}</div>`;
+  const bad = checks.filter(c => !c.ok), good = checks.filter(c => c.ok);
+  const acts = i => i.mon != null
+    ? `<button class="btn sm" data-act="sled" data-id="${i.id}" data-k="${i.k}">Sửa tháng ${pad2(i.mon)}</button><button class="btn sm ghost" data-act="slgo" data-m="${i.mon}" data-k="${i.k}">Xem tháng ${pad2(i.mon)}</button><button class="btn sm ghost" data-act="slfix" data-id="${i.id}" data-k="${i.k}" data-v="${i.fix}" title="Ghi Toàn xã bằng cộng 6 địa bàn">Đặt Toàn xã = ${i.fix}</button>`
+    : `<button class="btn sm" data-act="sled" data-id="${i.id}" data-k="${i.k}">Sửa lũy kế T01–T${pad2(i.to)}</button><button class="btn sm ghost" data-act="slgo" data-m="${i.mons[i.mons.length-1] || i.to}" data-k="${i.k}" data-ms="${i.mons.join(",")}">Xem các tháng</button><button class="btn sm ghost" data-act="slfix" data-id="${i.id}" data-k="${i.k}" data-v="${i.fix}" title="${i.stock ? "Ghi lũy kế bằng số của tháng gần nhất" : "Ghi lũy kế bằng tổng các tháng"}">Lấy theo cộng dồn = ${i.fix}</button>`;
+  const card = c => `<div class="panel stack" style="padding:12px 16px"><div class="row between"><b>${esc(c.label)}</b><span class="chip ${c.ok?"ok":"warn"}">${c.ok ? "Khớp" : c.items.length + " chỉ tiêu lệch"}</span></div>${c.ok ? "" : `<div class="ckl">${c.items.map(i => `<div class="cki"><span>${esc(i.text)}</span><div class="row" style="gap:6px;flex-wrap:wrap">${acts(i)}</div></div>`).join("")}</div>`}</div>`;
+  return `<div class="stack">${bad.length ? `<p class="small muted" style="margin:0">Bấm <b>Sửa</b> để mở đúng bảng và dòng bị lệch, <b>Xem</b> để đến bảng hằng tháng có tô dòng lệch. Nút <b>Lấy theo cộng dồn</b>/<b>Đặt Toàn xã</b> ghi nhanh số đề xuất. Mọi lần sửa đều được ghi lại trong Tệp nguồn.</p>` : ""}
+    ${bad.map(card).join("")}${good.length ? `<details class="panel" style="padding:10px 16px"><summary class="small"><b>${good.length} kỳ đã khớp</b></summary><div class="stack" style="margin-top:8px">${good.map(card).join("")}</div></details>` : ""}</div>`;
+}
+/* ---------- Sửa số liệu đã báo cáo ---------- */
+function slDocLabel(d){ return d.loai === "b01_thang" ? `Biểu 01-DSX tháng ${pad2(d.from)}/${d.nam}` : `Biểu 01-DSX lũy kế T${pad2(d.from)}–T${pad2(d.to)}/${d.nam}`; }
+function slRef(d){ // số tham chiếu: lũy kế → cộng dồn hằng tháng; tháng → cộng địa bàn
+  if (d.loai === "b01_luyke") { const mon = Object.fromEntries(slMonthly(d.nam).map(x => [x.from, x])); if (d.from !== 1 || ![...Array(d.to).keys()].every(i => mon[i+1])) return null;
+    return Object.fromEntries(B01_KEYS.map(k => [k, STOCK_KEYS.has(k) ? mon[d.to].toanXa[k] : Array.from({length:d.to}, (_,i) => mon[i+1].toanXa[k] || 0).reduce((a,b) => a + b, 0)])); }
+  return null;
+}
+function slTabEdit(){
+  const ed = S.slEd, d = S.solieu.find(x => x.id === ed.id); if (!d) { S.slEd = null; return ""; }
+  const dbs = d.perDb ? Object.keys(d.perDb) : [], ref = slRef(d);
+  const inp = (v, attrs) => `<input class="inp n slin" type="number" min="0" step="1" inputmode="numeric" value="${v ?? ""}" ${attrs}>`;
+  const rows = B01_KEYS.map(k => `<tr data-k="${k}" class="${k === ed.k ? "slhl" : ""}"><td class="nw">${esc(B01_NAMES[k])}</td>
+    ${dbs.map(db => `<td class="n">${inp(d.perDb[db][k], `data-db="${esc(db)}" data-k="${k}"`)}</td>`).join("")}
+    ${dbs.length ? `<td class="n" data-sum="${k}"></td>` : ""}
+    <td class="n">${inp(d.toanXa[k], `data-db="" data-k="${k}"`)}</td>
+    ${ref ? `<td class="n" data-ref="${k}">${ref[k] ?? ""}</td><td class="n" data-diff="${k}"></td>` : ""}</tr>`).join("");
+  const hist = (d.suaTay || []).slice(-5).reverse();
+  return `<div class="panel stack" id="sled"><div class="row between"><div><div class="eyebrow">Chỉnh sửa số liệu</div><h2>${esc(slDocLabel(d))}</h2></div>
+      <div class="row" style="gap:6px"><button class="btn sm ghost" data-act="sledx">Hủy</button><button class="btn sm primary" data-act="sledsave">Lưu thay đổi</button></div></div>
+    <p class="small muted" style="margin:0">${dbs.length ? "Sửa số từng địa bàn hoặc ô Toàn xã. Cột “Cộng địa bàn” tự tính để so với Toàn xã." : ref ? "Cột “Cộng dồn hằng tháng” tính từ Biểu 01 các tháng để đối chiếu; ô lệch được tô đỏ." : "Sửa trực tiếp số Toàn xã."} Để trống nghĩa là không có số.</p>
+    <div class="tblwrap"><table class="rv sledt"><thead><tr><th>Chỉ tiêu</th>${dbs.map(db => `<th class="n">${esc(db)}</th>`).join("")}${dbs.length ? `<th class="n">Cộng địa bàn</th>` : ""}<th class="n">Toàn xã</th>${ref ? `<th class="n">Cộng dồn hằng tháng</th><th class="n">Lệch</th>` : ""}</tr></thead><tbody>${rows}</tbody></table></div>
+    <label class="stack" style="gap:4px"><span class="lbl">Lý do sửa (ghi vào lịch sử)</span><input class="inp" id="sled-why" placeholder="Ví dụ: đối chiếu sổ A0, nhập nhầm tháng 3"></label>
+    ${hist.length ? `<div class="small muted"><b>Các lần sửa gần đây:</b><ul style="margin:4px 0 0;padding-left:18px">${hist.map(h => `<li>${new Date(h.at).toLocaleString("vi-VN")}${h.who ? " · " + esc(h.who) : ""}: ${h.changes.map(c => `${esc(B01_NAMES[c.k] || c.k)}${c.db ? " (" + esc(c.db) + ")" : ""} ${c.old ?? "trống"} → ${c.new ?? "trống"}`).join("; ")}${h.why ? " · " + esc(h.why) : ""}</li>`).join("")}</ul></div>` : ""}
+  </div>`;
+}
+function slEdCalc(){
+  const t = $("#sled"); if (!t) return;
+  const val = el => el.value.trim() === "" ? null : Math.max(0, Math.round(+el.value));
+  for (const k of B01_KEYS) {
+    const tx = t.querySelector(`input[data-db=""][data-k="${k}"]`), txv = tx ? val(tx) : null;
+    const sc = t.querySelector(`[data-sum="${k}"]`);
+    if (sc) { const s = [...t.querySelectorAll(`input[data-k="${k}"]:not([data-db=""])`)].reduce((a, el) => a + (val(el) || 0), 0); sc.textContent = s; const bad = txv != null && txv !== s; sc.style.color = bad ? "var(--danger)" : ""; sc.style.fontWeight = bad ? "700" : ""; }
+    const rf = t.querySelector(`[data-ref="${k}"]`), df = t.querySelector(`[data-diff="${k}"]`);
+    if (rf && df) { const r = rf.textContent === "" ? null : +rf.textContent; const dd = txv != null && r != null ? txv - r : null; df.textContent = dd ? (dd > 0 ? "+" : "") + dd : dd === 0 ? "✓" : ""; df.style.color = dd ? "var(--danger)" : "var(--ok)"; df.style.fontWeight = dd ? "700" : ""; }
+  }
+}
+async function slSaveDoc(d, changes, why){
+  if (!changes.length) return false;
+  d.suaTay = [...(d.suaTay || []), { at: Date.now(), who: window.__authUser || "", why: why || "", changes }];
+  await store.put("solieu", d); return true;
+}
+async function slEdSave(){
+  const ed = S.slEd, d = S.solieu.find(x => x.id === ed.id), t = $("#sled"); if (!d || !t) return;
+  const val = el => el.value.trim() === "" ? null : Math.max(0, Math.round(+el.value));
+  const changes = [];
+  for (const el of t.querySelectorAll("input.slin")) {
+    const k = el.dataset.k, db = el.dataset.db, nv = val(el);
+    const tgt = db ? d.perDb[db] : d.toanXa, ov = tgt[k] ?? null;
+    if (nv === ov) continue;
+    changes.push({ k, db, old: ov, new: nv });
+    if (nv == null) delete tgt[k]; else tgt[k] = nv;
+  }
+  if (!await slSaveDoc(d, changes, $("#sled-why").value.trim())) { toast("Chưa có số nào thay đổi."); return; }
+  S.slEd = null; S.slTab = "doichieu"; render();
+  const n = slChecks(d.nam).filter(c => !c.ok).length;
+  toast(`Đã lưu ${changes.length} ô. ${n ? "Còn " + n + " kỳ lệch." : "Tất cả các kỳ đã khớp."}`);
 }
 const CT_MAP = [[/dung cu tu cung/, "vong_moi"], [/thuoc cay/, "cay_moi"], [/thuoc tiem/, "tiem_moi"], [/thuoc uong/, "uong_moi"], [/bao cao su/, "bcs_moi"]];
 function slTabChiTieu(y, ct){
@@ -1825,7 +1898,7 @@ function slTabNguon(y){
   const docs = S.solieu.filter(d => d.nam === y).sort((a,b) => a.loai.localeCompare(b.loai) || (a.to||0) - (b.to||0));
   const lbl = d => d.loai === "chitieu" ? "Chỉ tiêu giao năm" : d.loai === "b01_thang" ? `Biểu 01-DSX tháng ${pad2(d.from)}${d.perDb ? ", theo 6 địa bàn" : ""}` : `Biểu 01-DSX lũy kế T${pad2(d.from)}–T${pad2(d.to)}`;
   return `<div class="panel stack"><h2>Phân loại tệp nguồn năm ${y}</h2><div class="tblwrap"><table class="rv"><thead><tr><th>Loại số liệu</th><th>Tệp, trang tính</th><th>Ghi chú</th><th></th></tr></thead><tbody>
-    ${docs.map(d => `<tr><td class="nw"><b>${esc(lbl(d))}</b></td><td class="small">${(d.nguon||[]).map(esc).join("<br>")}${(d.banCu||[]).map(b => `<br><span class="muted">Bản cũ: ${esc(b.nguon)}</span>`).join("")}</td><td class="small muted">${esc(d.ghiChu || "")}</td><td><button class="btn sm ghost danger" data-act="sldel" data-id="${d.id}" aria-label="Xóa">✕</button></td></tr>`).join("")}</tbody></table></div></div>`;
+    ${docs.map(d => `<tr><td class="nw"><b>${esc(lbl(d))}</b></td><td class="small">${(d.nguon||[]).map(esc).join("<br>")}${(d.banCu||[]).map(b => `<br><span class="muted">Bản cũ: ${esc(b.nguon)}</span>`).join("")}</td><td class="small muted">${esc(d.ghiChu || "")}${d.suaTay && d.suaTay.length ? `<br><span style="color:var(--warn)">Đã sửa tay ${d.suaTay.length} lần, gần nhất ${new Date(d.suaTay[d.suaTay.length-1].at).toLocaleDateString("vi-VN")}</span>` : ""}</td><td class="nw">${d.loai !== "chitieu" ? `<button class="btn sm ghost" data-act="sled" data-id="${d.id}">Sửa</button>` : ""}<button class="btn sm ghost danger" data-act="sldel" data-id="${d.id}" aria-label="Xóa">✕</button></td></tr>`).join("")}</tbody></table></div></div>`;
 }
 /* ---------- Nhập tệp trong trình duyệt ---------- */
 let slPending = [];
@@ -1873,7 +1946,13 @@ async function slSave(){
   slPending = []; toast(`Đã lưu ${n} bảng số liệu.`); render();
 }
 function afterSoLieu(){
-  $("#sl-y")?.addEventListener("change", e => { S.slY = +e.target.value; render(); });
+  $("#sl-y")?.addEventListener("change", e => { S.slY = +e.target.value; S.slEd = null; render(); });
+  const ed = $("#sled");
+  if (ed) { slEdCalc(); ed.addEventListener("input", slEdCalc);
+    ed.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.classList.contains("slin")) { e.preventDefault(); slEdSave(); } else if (e.key === "Escape") { S.slEd = null; render(); } });
+    const row = S.slEd.k && ed.querySelector(`tr[data-k="${S.slEd.k}"]`);
+    setTimeout(() => { (row || ed).scrollIntoView({ block: row ? "center" : "start", behavior:"smooth" }); const f = row ? (row.querySelector('input[data-db=""]') || row.querySelector("input")) : null; if (f) { f.focus({ preventScroll:true }); f.select(); } }, 30);
+  } else if (S.slHi) { const row = document.querySelector(`tr.slhl[data-k="${S.slHi.k}"]`); if (row) setTimeout(() => row.scrollIntoView({ block:"center", behavior:"smooth" }), 30); }
   const fi = $("#slfile"), drop = $("#sldrop"); if (!fi) return;
   fi.addEventListener("change", () => { slImportFiles(Array.from(fi.files)); fi.value = ""; });
   drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
@@ -2975,10 +3054,18 @@ document.addEventListener("click", async e => {
     case "dv-save-preset": { const name = $("#dv-pname").value.trim(); if (!name) { toast("Nhập tên cho mốc thời gian.", true); $("#dv-pname").focus(); break; } const er = rangeCheck(dvR()); if (er) { toast(er, true); break; } const pr = presetFromCurrent(name); S.settings.presets = [...(S.settings.presets||[]).filter(x => x.ten !== name), pr]; await store.putSettings(); render(); toast(`Đã lưu mốc "${name}".`); break; }
     case "dv-all": { const M = dvModel(); S.dv.dbs = M.dbs.length === M.allDb.length ? [] : null; render(); break; }
     case "dv-xlsx": exportDiaBanXlsx(); break;
-    case "sltab": S.slTab = b.dataset.v; render(); break;
+    case "sltab": S.slTab = b.dataset.v; S.slEd = null; S.slHi = null; render(); break;
+    case "sled": S.slEd = { id: b.dataset.id, k: b.dataset.k || null, back: S.slTab }; render(); break;
+    case "sledx": S.slTab = (S.slEd && S.slEd.back) || S.slTab; S.slEd = null; render(); break;
+    case "sledsave": slEdSave(); break;
+    case "slgo": S.slEd = null; S.slTab = "thang"; S.slM = +b.dataset.m; S.slHi = { k: b.dataset.k, ms: (b.dataset.ms || b.dataset.m).split(",").map(Number) }; render(); break;
+    case "slfix": { const d = S.solieu.find(x => x.id === b.dataset.id), k = b.dataset.k, v = +b.dataset.v; if (!d) break;
+      if (!await confirmBox(`Ghi “${B01_NAMES[k]}” của ${slDocLabel(d)} từ ${d.toanXa[k] ?? "trống"} thành ${v}?`, "Ghi số này")) break;
+      await slSaveDoc(d, [{ k, db:"", old: d.toanXa[k] ?? null, new: v }], d.loai === "b01_luyke" ? "Lấy theo cộng dồn hằng tháng" : "Đặt Toàn xã bằng cộng địa bàn"); d.toanXa[k] = v; await store.put("solieu", d);
+      render(); const n = slChecks(d.nam).filter(c => !c.ok).length; toast(`Đã ghi. ${n ? "Còn " + n + " kỳ lệch." : "Tất cả các kỳ đã khớp."}`); break; }
     case "home-newrep": go("reports"); newReportModal(); break;
     case "home-check": S.slTab = "doichieu"; go("solieu"); break;
-    case "slm": S.slM = +b.dataset.v; S.slTab = "thang"; render(); break;
+    case "slm": S.slM = +b.dataset.v; S.slTab = "thang"; S.slEd = null; render(); break;
     case "slsave": slSave(); break;
     case "slclear": slPending = []; render(); break;
     case "sldel": { const d = S.solieu.find(x => x.id === b.dataset.id); if (d && await confirmBox("Xóa bảng số liệu này khỏi trang? Tệp gốc của anh/chị không bị ảnh hưởng.", "Xóa", true)) { S.solieu = S.solieu.filter(x => x !== d); await store.del("solieu", d.id); render(); toast("Đã xóa."); } break; }

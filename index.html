@@ -6,6 +6,7 @@
 <title>Tổng hợp Báo cáo Dân số</title>
 <meta name="description" content="Tổng hợp báo cáo dân số – Trạm Y tế xã Lệ Thuỷ">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="firebase-config.js"></script>
 <script>/* ===== Bản chạy độc lập (GitHub Pages): lưu dữ liệu trong trình duyệt, tải tệp trực tiếp, Claude qua khóa API ===== */
 window.__STANDALONE = true;
 (function(){
@@ -30,7 +31,9 @@ window.__STANDALONE = true;
     for (const [k, v] of Object.entries(j.kv)) if (!(k in have)) add[k] = v;
     await IDB.putAll(add); return Object.keys(add).length;
   };
-  const seedReady = (async () => { try { const all = await IDB.all(); if (!Object.keys(all).length && location.protocol.startsWith("http")) { const n = await window.__loadSeed(true); if (n) window.__SEEDED = n; } } catch(e){} })();
+  const FB = window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey ? window.FIREBASE_CONFIG : null;
+  window.__MODE = FB ? "fb" : "local";
+  const seedReady = FB ? Promise.resolve() : (async () => { try { const all = await IDB.all(); if (!Object.keys(all).length && location.protocol.startsWith("http")) { const n = await window.__loadSeed(true); if (n) window.__SEEDED = n; } } catch(e){} })();
   const cp = v => v == null ? v : JSON.parse(JSON.stringify(v));
   const snap = (id, v) => ({ id, exists: v != null, data: () => v == null ? undefined : cp(v), metadata:{ fromCache:false, hasPendingWrites:false } });
   function mkDoc(path){
@@ -134,8 +137,62 @@ window.__STANDALONE = true;
       document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", show) : show();
     });
   }
-  const loginReady = (async () => { await seedReady; const a = await IDB.get(AUTH); if (!a) return; if (sess.get() === a.user) { window.__authUser = a.user; return; } await loginScreen(a); })();
-  window.claude = { use: async name => name === "db" ? (await loginReady, db) : name === "downloads" ? downloads : name === "user" ? user : name === "sample" ? (getKey() ? sample : null) : null };
+  const loginReady = FB ? Promise.resolve() : (async () => { await seedReady; const a = await IDB.get(AUTH); if (!a) return; if (sess.get() === a.user) { window.__authUser = a.user; return; } await loginScreen(a); })();
+  /* ---- Chế độ dùng chung qua Firebase: đăng nhập ở mọi máy ---- */
+  window.__store = { all: () => IDB.all(), putAll: kv => IDB.putAll(kv) };
+  let fsdb = null;
+  const loadScript = src => new Promise((ok, bad) => { const x = document.createElement("script"); x.src = src; x.onload = ok; x.onerror = () => bad(new Error("Không tải được " + src)); document.head.appendChild(x); });
+  function fbLogin(auth){
+    return new Promise(resolve => {
+      const show = () => {
+        const o = document.createElement("div"); o.id = "login";
+        o.innerHTML = `<form class="lg-card" autocomplete="on"><div class="lg-brand"><div class="seal">TYT</div><div><b>Tổng hợp báo cáo dân số</b><small>Trạm Y tế xã Lệ Thuỷ</small></div></div>
+          <h1>Đăng nhập</h1><p class="small muted" style="margin:0">Dùng tài khoản được cấp để xem và cập nhật số liệu dùng chung, trên bất kỳ máy nào.</p>
+          <div class="field"><label for="lg-u">Email</label><input class="inp" id="lg-u" name="email" type="email" autocomplete="username" required></div>
+          <div class="field"><label for="lg-p">Mật khẩu</label><input class="inp" id="lg-p" name="password" type="password" autocomplete="current-password" required></div>
+          <div id="lg-err" class="status" role="alert"></div>
+          <button class="btn primary" type="submit" style="justify-content:center">Đăng nhập</button>
+          <button class="btn ghost sm" type="button" id="lg-forgot" style="align-self:flex-start">Quên mật khẩu? Gửi email đặt lại</button></form>`;
+        document.body.appendChild(o);
+        const err = o.querySelector("#lg-err"), say = (t, bad) => { err.textContent = t; err.classList.toggle("err", !!bad); };
+        setTimeout(() => o.querySelector("#lg-u").focus(), 50);
+        o.querySelector("form").addEventListener("submit", async e => {
+          e.preventDefault(); say("Đang đăng nhập…");
+          try { await auth.signInWithEmailAndPassword(o.querySelector("#lg-u").value.trim(), o.querySelector("#lg-p").value); o.remove(); resolve(auth.currentUser); }
+          catch(x){ const c = x && x.code || ""; say(/wrong-password|invalid-credential|user-not-found|invalid-email|invalid-login/.test(c) ? "Email hoặc mật khẩu không đúng." : /too-many-requests/.test(c) ? "Nhập sai nhiều lần. Đợi vài phút rồi thử lại." : /network/.test(c) ? "Không có kết nối mạng." : "Không đăng nhập được: " + (x.message || c), true); o.querySelector("#lg-p").value = ""; }
+        });
+        o.querySelector("#lg-forgot").addEventListener("click", async () => {
+          const em = o.querySelector("#lg-u").value.trim(); if (!em) { say("Nhập email trước, rồi bấm Quên mật khẩu.", true); return; }
+          try { await auth.sendPasswordResetEmail(em); say("Đã gửi email đặt lại mật khẩu tới " + em + ". Kiểm tra hộp thư (cả mục Spam)."); } catch(x){ say("Không gửi được email: " + (x.message || x.code), true); }
+        });
+      };
+      document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", show) : show();
+    });
+  }
+  const COLLS = ["templates", "reports", "phieu", "solieu", "cfg"];
+  const fbReady = !FB ? Promise.resolve() : (async () => {
+    const V = "10.12.2";
+    await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-app-compat.js`);
+    await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-auth-compat.js`);
+    await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore-compat.js`);
+    const app = firebase.initializeApp(FB), auth = firebase.auth();
+    let u = await new Promise(res => { const un = auth.onAuthStateChanged(x => { un(); res(x); }); });
+    if (!u) u = await fbLogin(auth);
+    window.__authUser = u.email; window.__fbAuth = auth;
+    fsdb = firebase.firestore();
+    const putAll = async kv => { const ents = Object.entries(kv); for (let i = 0; i < ents.length; i += 400) { const b = fsdb.batch(); for (const [k, v] of ents.slice(i, i + 400)) b.set(fsdb.doc(k), v); await b.commit(); } };
+    window.__store = {
+      all: async () => { const out = {}; for (const c of COLLS) { const q = await fsdb.collection(c).get(); q.docs.forEach(d => { out[c + "/" + d.id] = d.data(); }); } return out; },
+      putAll
+    };
+    // Lần đầu: kho dùng chung còn trống thì nạp số liệu ban đầu
+    try {
+      const [t, sl] = await Promise.all([fsdb.collection("templates").limit(1).get(), fsdb.collection("solieu").limit(1).get()]);
+      if (t.empty && sl.empty) { const r = await fetch(SEED_URL, { cache:"no-store" }); if (r.ok) { const j = await r.json(); await putAll(j.kv); window.__SEEDED = Object.keys(j.kv).length; } }
+    } catch(e){ console.warn(e); }
+  })().catch(e => { document.addEventListener("DOMContentLoaded", () => {}); window.__fbError = e && e.message || String(e); });
+  window.__localKV = () => IDB.all();
+  window.claude = { use: async name => name === "db" ? (FB ? (await fbReady, fsdb) : (await loginReady, db)) : name === "downloads" ? downloads : name === "user" ? user : name === "sample" ? (getKey() ? sample : null) : null };
 })();
 </script>
 </head>
@@ -951,7 +1008,7 @@ function setNav(){
   const map = { report:"reports", tpledit:"templates" };
   const s0 = S.settings; $("#brand-name").textContent = s0.donViBieu || [s0.coQuan, s0.chuQuan].filter(Boolean).join(" ") || "Trạm Y tế";
   $("#crumb").innerHTML = `<span>${esc(s0.donViBieu || "Trạm Y tế")}</span><span>/</span><b>${esc(VIEW_NAMES[S.view] || "")}</b>`;
-  const d = new Date(); $("#topstat").innerHTML = `<span>${["Chủ nhật","Thứ hai","Thứ ba","Thứ tư","Thứ năm","Thứ sáu","Thứ bảy"][d.getDay()]}, ${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}</span>${window.__STANDALONE && S.authInfo ? `<span class="chip">${esc(S.authInfo.ten || S.authInfo.user)}</span><button class="btn sm" data-act="sa-logout">Đăng xuất</button>` : ""}${window.__STANDALONE ? `<span class="chip ok">● Lưu trên máy này</span>` : cap.access === "ok" ? `<span class="chip ok">● Đã kết nối dữ liệu</span>` : cap.access ? `<span class="chip warn">Chưa xem được dữ liệu</span>` : ""}`;
+  const d = new Date(); $("#topstat").innerHTML = `<span>${["Chủ nhật","Thứ hai","Thứ ba","Thứ tư","Thứ năm","Thứ sáu","Thứ bảy"][d.getDay()]}, ${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}</span>${window.__STANDALONE && S.authInfo ? `<span class="chip">${esc(S.authInfo.ten || S.authInfo.user)}</span><button class="btn sm" data-act="sa-logout">Đăng xuất</button>` : ""}${window.__MODE === "fb" ? `<span class="chip ok">● Dùng chung</span>` : window.__STANDALONE ? `<span class="chip ok">● Lưu trên máy này</span>` : cap.access === "ok" ? `<span class="chip ok">● Đã kết nối dữ liệu</span>` : cap.access ? `<span class="chip warn">Chưa xem được dữ liệu</span>` : ""}`;
   $$("#nav button").forEach(b => b.setAttribute("aria-current", String(b.dataset.v === (map[S.view] || S.view))));
   $("#n-rep").textContent = S.reports.length || "";
   $("#n-tpl").textContent = S.templates.length || "";
@@ -1547,7 +1604,7 @@ document.addEventListener("change", async e => {
   if (e.target.id !== "sa-file" || !e.target.files[0]) return;
   try { const j = JSON.parse(await e.target.files[0].text()); if (!j || j.app !== "tong-hop-dan-so" || !j.kv) throw new Error("Tệp không phải bản sao lưu của trang này.");
     if (!(await confirmBox(`Khôi phục ${Object.keys(j.kv).length} mục dữ liệu từ tệp? Dữ liệu trùng mã trên máy này sẽ được thay bằng dữ liệu trong tệp.`, "Khôi phục"))) return;
-    await window.__IDB.putAll(j.kv); toast("Đã khôi phục. Đang tải lại…"); setTimeout(() => location.reload(), 600);
+    await window.__store.putAll(j.kv); toast("Đã khôi phục. Đang tải lại…"); setTimeout(() => location.reload(), 600);
   } catch(err){ toast(err.message || "Không đọc được tệp.", true); }
 });
 function readSettingsForm(){
@@ -2733,6 +2790,10 @@ function viewSettings(){
     <div class="row"><button class="btn primary" data-act="savesettings">Lưu thông tin</button></div>`;
 }
 function saAccount(){
+  if (window.__MODE === "fb") return `<div class="panel stack"><h2>Tài khoản đăng nhập</h2>
+    <div class="row"><span class="chip ok">Đang đăng nhập: ${esc(window.__authUser || "")}</span><button class="btn sm" data-act="fb-reset">Đổi mật khẩu (gửi email)</button><button class="btn sm" data-act="sa-logout">Đăng xuất</button></div>
+    <p class="small muted" style="margin:0">Số liệu lưu trên Firebase, dùng chung cho mọi tài khoản được cấp. Thêm, xóa tài khoản cán bộ tại Firebase Console → Authentication → Users.</p>
+    <div class="row"><button class="btn sm" data-act="fb-migrate">Đưa số liệu đang lưu riêng trên máy này lên kho dùng chung</button></div></div>`;
   const a = S.authInfo;
   return `<div class="panel stack"><h2>Tài khoản đăng nhập</h2>
     <p class="small muted" style="margin:0">Khi đã tạo tài khoản, mỗi lần mở trang trên máy này phải đăng nhập mới xem được số liệu. Tài khoản lưu trên từng máy; muốn dùng máy khác thì khôi phục tệp sao lưu (có kèm tài khoản) hoặc tạo tài khoản trên máy đó.</p>
@@ -2749,7 +2810,7 @@ function saAccount(){
 }
 function saPanel(){
   let key = "", m1 = "", m2 = ""; try { key = localStorage.getItem("ths_api_key") || ""; m1 = localStorage.getItem("ths_model") || ""; m2 = localStorage.getItem("ths_model_complex") || ""; } catch(e){}
-  return saAccount() + `<div class="panel stack"><h2>Dữ liệu trên máy này</h2>
+  return saAccount() + `<div class="panel stack"><h2>${window.__MODE === "fb" ? "Sao lưu số liệu dùng chung" : "Dữ liệu trên máy này"}</h2>
       <p class="small muted" style="margin:0">Bản trên GitHub lưu toàn bộ số liệu trong trình duyệt của máy đang dùng. Hãy sao lưu định kỳ ra tệp và cất giữ cẩn thận; muốn dùng trên máy khác thì khôi phục từ tệp sao lưu. Không đưa tệp sao lưu lên GitHub vì có thể chứa họ tên, số CCCD.</p>
       <div class="row"><button class="btn" data-act="sa-export">Tải tệp sao lưu</button><label class="btn" for="sa-file">Khôi phục từ tệp…</label><input type="file" id="sa-file" accept=".json" hidden><button class="btn" data-act="sa-seed">Nạp số liệu năm 2026</button></div>
       <p class="small muted" style="margin:0">"Nạp số liệu năm 2026" thêm biểu mẫu, số liệu Biểu 01-DSX tháng 1–9, chỉ tiêu giao và danh sách địa bàn có sẵn trên trang; mục nào máy này đã có thì giữ nguyên.</p></div>
@@ -2883,7 +2944,7 @@ document.addEventListener("click", async e => {
     case "rmrow": readTplForm(); tplDraft.rows.splice(+b.dataset.i, 1); render(); break;
     case "rmcol": readTplForm(); tplDraft.cols.splice(+b.dataset.i, 1); render(); break;
     case "mvrow": case "mvcol": { readTplForm(); const arr = act==="mvrow" ? tplDraft.rows : tplDraft.cols, i = +b.dataset.i, k = i + (+b.dataset.d); if (k>=0 && k<arr.length) { [arr[i],arr[k]] = [arr[k],arr[i]]; render(); } break; }
-    case "sa-export": { const all = await window.__IDB.all(); const d = new Date(); await saveFile(`Sao luu tong hop dan so ${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`, JSON.stringify({ app:"tong-hop-dan-so", version:1, exportedAt:d.toISOString(), kv:all })); break; }
+    case "sa-export": { const all = await window.__store.all(); const d = new Date(); await saveFile(`Sao luu tong hop dan so ${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`, JSON.stringify({ app:"tong-hop-dan-so", version:1, exportedAt:d.toISOString(), kv:all })); break; }
     case "sa-savekey": try { const v = id => $(id).value.trim(); v("#sa-key") ? localStorage.setItem("ths_api_key", v("#sa-key")) : localStorage.removeItem("ths_api_key"); v("#sa-m1") ? localStorage.setItem("ths_model", v("#sa-m1")) : localStorage.removeItem("ths_model"); v("#sa-m2") ? localStorage.setItem("ths_model_complex", v("#sa-m2")) : localStorage.removeItem("ths_model_complex"); } catch(e){ toast("Trình duyệt không cho lưu cài đặt.", true); break; } location.reload(); break;
     case "sa-seed": try { const n = await window.__loadSeed(true); toast(n ? `Đã nạp ${n} mục. Đang tải lại…` : "Máy này đã có đủ số liệu ban đầu."); if (n) setTimeout(() => location.reload(), 600); } catch(err){ toast(err.message, true); } break;
     case "sa-acc-create": { const u = $("#ac-u").value.trim(), p1 = $("#ac-p").value, p2 = $("#ac-p2").value, ten = $("#ac-ten").value.trim();
@@ -2897,7 +2958,13 @@ document.addEventListener("click", async e => {
     case "sa-acc-del": { const o = $("#ac-old").value; if (!(await window.__auth.check(S.authInfo.user, o))) { toast("Nhập đúng mật khẩu hiện tại vào ô \"Mật khẩu hiện tại\" để bỏ khóa.", true); break; }
       if (!(await confirmBox("Bỏ khóa đăng nhập? Sau đó ai mở trang trên máy này cũng xem được số liệu.", "Bỏ khóa", true))) break;
       await window.__auth.remove(); S.authInfo = null; render(); toast("Đã bỏ khóa đăng nhập."); break; }
-    case "sa-logout": window.__auth.logout(); break;
+    case "sa-logout": if (window.__MODE === "fb") { await window.__fbAuth.signOut(); location.reload(); } else window.__auth.logout(); break;
+    case "fb-reset": try { await window.__fbAuth.sendPasswordResetEmail(window.__authUser); toast("Đã gửi email đổi mật khẩu tới " + window.__authUser + "."); } catch(e){ toast("Không gửi được email: " + (e.message || e.code), true); } break;
+    case "fb-migrate": { const kv = await window.__localKV(); delete kv["cfg/auth"]; const n = Object.keys(kv).length; if (!n) { toast("Máy này không có số liệu lưu riêng.", true); break; }
+      const cur = await window.__store.all(); const add = {}; for (const [k, v] of Object.entries(kv)) if (!(k in cur)) add[k] = v;
+      if (!Object.keys(add).length) { toast("Kho dùng chung đã có đủ các mục của máy này."); break; }
+      if (!(await confirmBox(`Đưa ${Object.keys(add).length} mục từ máy này lên kho dùng chung? Mục đã có trên kho được giữ nguyên.`, "Đưa lên"))) break;
+      await window.__store.putAll(add); toast("Đã đưa lên. Đang tải lại…"); setTimeout(() => location.reload(), 600); break; }
     case "sa-clearkey": try { localStorage.removeItem("ths_api_key"); } catch(e){} location.reload(); break;
     case "savesettings": readSettingsForm(); await store.putSettings(); setNav(); toast("Đã lưu thông tin cơ quan."); break;
     case "db-add": readSettingsForm(); S.settings.diaBan = [...(S.settings.diaBan||[]), { ten:"", thon:"" }]; render(); $$("[data-db-name]").pop()?.focus(); break;
@@ -2933,11 +3000,12 @@ document.addEventListener("keydown", e => {
   cap.db = db; cap.sample = sample; cap.downloads = downloads;
   if (sample) { try { const l = await sample.limits(); cap.images = l && l.images || null; } catch(e){} }
   if (window.__STANDALONE) cap.access = "ok";
-  $("#st-db").innerHTML = window.__STANDALONE ? `<span class="dot"></span>Dữ liệu lưu trong trình duyệt máy này` : cap.access === "ok" ? `<span class="dot"></span>Dữ liệu được lưu tự động` : cap.access === "noperm" ? `<span class="dot off"></span>Tài khoản này chưa có quyền xem số liệu` : `<span class="dot off"></span>Chưa kết nối dữ liệu – cần đăng nhập`;
+  $("#st-db").innerHTML = window.__MODE === "fb" ? (window.__fbError ? `<span class="dot off"></span>Lỗi kết nối kho dùng chung` : `<span class="dot"></span>Số liệu dùng chung (Firebase)`) : window.__STANDALONE ? `<span class="dot"></span>Dữ liệu lưu trong trình duyệt máy này` : cap.access === "ok" ? `<span class="dot"></span>Dữ liệu được lưu tự động` : cap.access === "noperm" ? `<span class="dot off"></span>Tài khoản này chưa có quyền xem số liệu` : `<span class="dot off"></span>Chưa kết nối dữ liệu – cần đăng nhập`;
   $("#st-ai").innerHTML = window.__STANDALONE && !sample ? `<span class="dot off"></span>Chưa kết nối Claude (nhập khóa API ở Thông tin cơ quan)` : sample ? `<span class="dot"></span>Trợ lý đọc tệp sẵn sàng${cap.images?"":" (không đọc ảnh)"}` : `<span class="dot off"></span>Trợ lý đọc tệp chưa sẵn sàng`;
   try { await store.loadAll(); await store.loadYear(S.pY); } catch(e){ toast("Không tải được dữ liệu đã lưu: " + (e && e.message || e.code || ""), true); }
   S.view = "home"; bindTips();
-  if (window.__auth) S.authInfo = await window.__auth.get();
+  if (window.__MODE === "fb") S.authInfo = window.__authUser ? { user: window.__authUser, ten: "" } : null; else if (window.__auth) S.authInfo = await window.__auth.get();
+  if (window.__fbError) toast("Không kết nối được kho dùng chung: " + window.__fbError, true);
   if (window.__SEEDED) setTimeout(() => toast("Đã nạp sẵn số liệu năm 2026 vào máy này."), 400);
   S.loaded = true; render();
 })();

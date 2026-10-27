@@ -2462,7 +2462,7 @@ function slTabCheck(checks){
     ? `<button class="btn sm" data-act="sled" data-id="${i.id}" data-k="${i.k}">Sửa tháng ${pad2(i.mon)}</button><button class="btn sm ghost" data-act="slgo" data-m="${i.mon}" data-k="${i.k}">Xem tháng ${pad2(i.mon)}</button><button class="btn sm ghost" data-act="slfix" data-id="${i.id}" data-k="${i.k}" data-v="${i.fix}" title="Ghi Toàn xã bằng cộng 6 địa bàn">Đặt Toàn xã = ${i.fix}</button>`
     : `<button class="btn sm" data-act="sled" data-id="${i.id}" data-k="${i.k}">Sửa lũy kế T01–T${pad2(i.to)}</button><button class="btn sm ghost" data-act="slgo" data-m="${i.mons[i.mons.length-1] || i.to}" data-k="${i.k}" data-ms="${i.mons.join(",")}">Xem các tháng</button><button class="btn sm ghost" data-act="slfix" data-id="${i.id}" data-k="${i.k}" data-v="${i.fix}" title="${i.stock ? "Ghi lũy kế bằng số của tháng gần nhất" : "Ghi lũy kế bằng tổng các tháng"}">Lấy theo cộng dồn = ${i.fix}</button>`;
   const card = c => `<div class="panel stack" style="padding:12px 16px"><div class="row between"><b>${esc(c.label)}</b><span class="chip ${c.ok?"ok":"warn"}">${c.ok ? "Khớp" : c.items.length + " chỉ tiêu lệch"}</span></div>${c.ok ? "" : `<div class="ckl">${c.items.map(i => `<div class="cki"><span>${esc(i.text)}</span><div class="row" style="gap:6px;flex-wrap:wrap">${acts(i)}</div></div>`).join("")}</div>`}</div>`;
-  return `<div class="stack">${bad.length ? `<p class="small muted" style="margin:0">Bấm <b>Sửa</b> để mở đúng bảng và dòng bị lệch, <b>Xem</b> để đến bảng hằng tháng có tô dòng lệch. Nút <b>Lấy theo cộng dồn</b>/<b>Đặt Toàn xã</b> ghi nhanh số đề xuất. Mọi lần sửa đều được ghi lại trong Tệp nguồn.</p>` : ""}
+  return `<div class="stack"><div class="panel row between" style="padding:12px 16px"><span class="small"><b>Đồng bộ số liệu tổng.</b> Tính lại Toàn xã theo 6 địa bàn, Tổng số trẻ sinh = nam + nữ, lũy kế = cộng dồn hằng tháng, và cập nhật các kỳ báo cáo đã lấy số cũ. Số cũ được giữ trong lịch sử.</span><button class="btn sm primary" data-act="slsyncfull">Đồng bộ toàn bộ</button></div>${bad.length ? `<p class="small muted" style="margin:0">Bấm <b>Sửa</b> để mở đúng bảng và dòng bị lệch, <b>Xem</b> để đến bảng hằng tháng có tô dòng lệch. Nút <b>Lấy theo cộng dồn</b>/<b>Đặt Toàn xã</b> ghi nhanh số đề xuất. Mọi lần sửa đều được ghi lại trong Tệp nguồn.</p>` : ""}
     ${bad.map(card).join("")}${good.length ? `<details class="panel" style="padding:10px 16px"><summary class="small"><b>${good.length} kỳ đã khớp</b></summary><div class="stack" style="margin-top:8px">${good.map(card).join("")}</div></details>` : ""}</div>`;
 }
 /* ---------- Sửa số liệu đã báo cáo ---------- */
@@ -2515,7 +2515,7 @@ function slSyncDoc(d, keys){
   const groups = d.perDb ? Object.entries(d.perDb) : [["", d.toanXa]];
   for (const [db, g] of groups) if ((!keys || keys.has("sinh_nam") || keys.has("sinh_nu") || keys.has("sinh_tong")) && (g.sinh_nam != null || g.sinh_nu != null)) put(g, "sinh_tong", (g.sinh_nam || 0) + (g.sinh_nu || 0), db);
   if (d.perDb) { const ks = keys ? new Set([...keys, ...(keys.has("sinh_nam") || keys.has("sinh_nu") ? ["sinh_tong"] : [])]) : new Set(B01_KEYS);
-    for (const k of ks) { const vs = Object.values(d.perDb).map(g => g[k]); if (vs.every(v => v == null) && d.toanXa[k] == null) continue; put(d.toanXa, k, vs.reduce((a, v) => a + (v || 0), 0), ""); } }
+    for (const k of ks) { const vs = Object.values(d.perDb).map(g => g[k]); if (vs.every(v => v == null)) continue; put(d.toanXa, k, vs.reduce((a, v) => a + (v || 0), 0), ""); } }
   return ch;
 }
 async function slPropagate(d, txChanges, why){
@@ -2549,6 +2549,35 @@ async function slEdSave(){
   const n = slChecks(d.nam).filter(c => !c.ok).length;
   toast(`Đã lưu ${changes.length} ô${changes.some(c => !c.db) && d.perDb ? ", cập nhật cột Toàn xã" : ""}${lks.length ? ` và ${lks.length} bảng lũy kế` : ""}. ${n ? "Còn " + n + " kỳ lệch." : "Tất cả các kỳ đã khớp."}`);
 }
+/* Đồng bộ toàn bộ số liệu tổng theo số liệu chi tiết: Toàn xã = cộng địa bàn; tổng sinh = nam + nữ; lũy kế = cộng dồn hằng tháng; kỳ báo cáo đã lấy số cũ được cập nhật */
+async function slSyncFull(why){
+  const r = { mon:0, lk:0, rep:0, cells:0 }, stamp = new Date().toLocaleDateString("vi-VN");
+  const oldLk = {}; for (const d of S.solieu.filter(x => x.loai === "b01_luyke" || x.loai === "b01_thang")) oldLk[d.id] = { ...d.toanXa };
+  for (const d of S.solieu.filter(x => x.loai === "b01_thang")) { const ch = slSyncDoc(d, null); if (ch.length) { await slSaveDoc(d, ch, why); r.mon++; r.cells += ch.length; } }
+  for (const y of [...new Set(S.solieu.filter(x => x.loai === "b01_luyke").map(x => x.nam))]) {
+    const mon = Object.fromEntries(slMonthly(y).map(d => [d.from, d]));
+    for (const lk of slLuyke(y)) {
+      const ms = []; for (let m = lk.from; m <= lk.to; m++) ms.push(mon[m]); if (ms.some(x => !x)) continue;
+      const ch = [];
+      for (const k of B01_KEYS) {
+        const vals = ms.map(x => x.toanXa[k]); if (vals.every(v => v == null)) continue;
+        const cum = STOCK_KEYS.has(k) ? ms[ms.length - 1].toanXa[k] : vals.reduce((a, v) => a + (v || 0), 0);
+        if (cum == null) continue; const ov = lk.toanXa[k] ?? null; if (ov === cum) continue;
+        ch.push({ k, db:"", old: ov, new: cum }); lk.toanXa[k] = cum;
+      }
+      if (ch.length) { lk.banCu = [...(lk.banCu || []), { nguon:`Số trước khi đồng bộ ngày ${stamp}`, toanXa: oldLk[lk.id] }]; await slSaveDoc(lk, ch, why); r.lk++; r.cells += ch.length; }
+    }
+  }
+  // kỳ báo cáo đã bấm "Dùng số đã báo cáo": ô nào còn đúng số cũ thì thay bằng số mới
+  for (const rep of S.reports) { try {
+    const of = officialFor(rep); if (!of || !oldLk[of.id]) continue; const ac = autoColId(rep.tpl); let n = 0;
+    for (const row of rep.tpl.rows) { if (!row.auto) continue; const key = row.id + "|" + ac, ov = oldLk[of.id][row.auto], nv = of.toanXa[row.auto];
+      if (rep.base && rep.base[key] != null && rep.base[key] === ov && nv != null && nv !== ov) { rep.base[key] = nv; n++; } }
+    if (n) { rep.updatedAt = Date.now(); await store.put("reports", rep); r.rep++; r.cells += n; }
+  } catch(e){} }
+  return r;
+}
+
 async function slSyncAll(){ // đồng bộ các tháng đã sửa theo địa bàn nhưng Toàn xã chưa đổi
   let nDoc = 0, nLk = 0;
   for (const d of S.solieu.filter(x => x.loai === "b01_thang" && x.perDb)) {
@@ -3759,6 +3788,7 @@ document.addEventListener("click", async e => {
     case "sled": S.slEd = { id: b.dataset.id, k: b.dataset.k || null, back: S.slTab }; render(); break;
     case "sledx": S.slTab = (S.slEd && S.slEd.back) || S.slTab; S.slEd = null; render(); break;
     case "sledsave": slEdSave(); break;
+    case "slsyncfull": { if (!await confirmBox("Tính lại toàn bộ số liệu tổng theo số liệu hằng tháng của 6 địa bàn? Các bảng lũy kế đã báo cáo sẽ được thay bằng cộng dồn hằng tháng; số cũ vẫn giữ trong lịch sử.", "Đồng bộ")) break; const r = await slSyncFull("Đồng bộ toàn bộ số liệu tổng (bấm tay)"); render(); toast(r.cells ? `Đã đồng bộ ${r.mon} tháng, ${r.lk} bảng lũy kế${r.rep ? `, ${r.rep} kỳ báo cáo` : ""} (${r.cells} ô).` : "Số liệu tổng đã khớp, không có gì cần cập nhật."); break; }
     case "slgo": S.slEd = null; S.slTab = "thang"; S.slM = +b.dataset.m; S.slHi = { k: b.dataset.k, ms: (b.dataset.ms || b.dataset.m).split(",").map(Number) }; render(); break;
     case "slfix": { const d = S.solieu.find(x => x.id === b.dataset.id), k = b.dataset.k, v = +b.dataset.v; if (!d) break;
       if (!await confirmBox(`Ghi “${B01_NAMES[k]}” của ${slDocLabel(d)} từ ${d.toanXa[k] ?? "trống"} thành ${v}?`, "Ghi số này")) break;
@@ -3808,6 +3838,7 @@ async function fixDiaBan(){
   $("#st-ai").innerHTML = window.__STANDALONE && !cap.sample ? `<span class="dot off"></span>Chưa kết nối Claude (nhập khóa API ở Thông tin cơ quan)` : cap.sample ? `<span class="dot"></span>Trợ lý đọc tệp sẵn sàng${cap.images?"":" (không đọc ảnh)"}` : `<span class="dot off"></span>Trợ lý đọc tệp chưa sẵn sàng`;
   try { await store.loadAll(); await store.loadYear(S.pY); } catch(e){ toast("Không tải được dữ liệu đã lưu: " + (e && e.message || e.code || ""), true); }
   try { await fixDiaBan(); } catch(e){}
+  try { if (!S.settings.syncFull && cap.db) { const r = await slSyncFull("Đồng bộ toàn bộ số liệu tổng theo số liệu hằng tháng theo địa bàn"); S.settings.syncFull = 1; await store.putSettings(); if (r.cells) setTimeout(() => toast(`Đã đồng bộ số liệu tổng: ${r.mon} tháng, ${r.lk} bảng lũy kế${r.rep ? `, ${r.rep} kỳ báo cáo` : ""} (${r.cells} ô). Số cũ được giữ trong lịch sử.`), 900); } } catch(e){}
   try { const r = await slSyncAll(); if (r.nDoc) setTimeout(() => toast(`Đã cập nhật cột Toàn xã của ${r.nDoc} tháng theo số địa bàn đã sửa${r.nLk ? ` và ${r.nLk} bảng lũy kế liên quan` : ""}.`), 600); } catch(e){}
   S.view = "home"; bindTips();
   if (window.__MODE === "fb") S.authInfo = window.__authUser ? { user: window.__authUser, ten: "" } : null; else if (window.__auth) S.authInfo = await window.__auth.get();

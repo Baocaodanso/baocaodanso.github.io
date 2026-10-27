@@ -1119,6 +1119,102 @@ const TT_LIB = [
 ];
 const TT_KYNANG = { tieuDe:"Kỹ năng truyền thông trực tiếp của cộng tác viên", body:"Truyền thông trực tiếp tại hộ gia đình, tổ dân cư là thế mạnh của cộng tác viên dân số.\n- Chuẩn bị nội dung ngắn gọn, tờ rơi, tranh lật phù hợp đối tượng.\n- Chào hỏi thân thiện, chọn thời điểm gia đình rảnh rỗi.\n- Lắng nghe, hỏi để hiểu hoàn cảnh; không phê phán, không áp đặt.\n- Dùng ngôn ngữ dễ hiểu, ví dụ gần gũi ở địa phương.\n- Hẹn lần gặp sau, ghi chép kết quả vào sổ theo dõi." };
 
+/* ---------- Soạn theo cấu trúc văn bản đã tải (khi chủ đề không thuộc thư viện) ---------- */
+const TT_COLHINT = [
+  [/ho so/, "ghi số hộ theo sổ ghi chép ban đầu của thôn"],
+  [/ho va ten|ho ten/, "ghi đầy đủ họ, chữ đệm và tên, có dấu"],
+  [/cccd|can cuoc|cmnd|dinh danh/, "ghi đủ số căn cước công dân (số định danh cá nhân); kiểm tra lại từng chữ số"],
+  [/ngay|thang|nam sinh/, "ghi đủ ngày/tháng/năm theo dạng dd/mm/yyyy"],
+  [/gioi tinh|nam.*nu/, "ghi rõ Nam hoặc Nữ (hoặc đánh dấu vào cột tương ứng)"],
+  [/dan toc/, "ghi tên dân tộc (Kinh, Bru - Vân Kiều…)"],
+  [/quan he/, "ghi quan hệ với chủ hộ: chủ hộ, vợ, chồng, con, cha, mẹ, cháu…"],
+  [/noi di|noi den/, "ghi rõ xã, huyện (nếu có), tỉnh"],
+  [/noi de\b/, "ghi nơi sinh: bệnh viện, trạm y tế, tại nhà, nơi khác"],
+  [/con thu/, "ghi số thứ tự lần sinh của người mẹ (con thứ 1, 2, 3…)"],
+  [/bptt|bien phap/, "ghi tên biện pháp tránh thai: vòng, cấy, tiêm, uống, bao cao su, triệt sản…"],
+  [/hoc van/, "ghi trình độ học vấn cao nhất đã học xong"],
+  [/hon nhan/, "ghi tình trạng hôn nhân: chưa vợ/chồng, có vợ/chồng, góa, ly hôn, ly thân"],
+  [/thong tin cu|thong tin moi/, "ghi rõ nội dung trước và sau khi thay đổi"],
+  [/su kien thai san/, "ghi mang thai, sảy thai hoặc phá thai"],
+  [/ghi chu|nguyen nhan/, "ghi thông tin bổ sung nếu cần (ví dụ nguyên nhân tử vong)"]
+];
+function ttColHint(c){ const n = noDia(c); const h = TT_COLHINT.find(([re]) => re.test(n)); return h ? h[1] : ""; }
+function ttDocSections(text){
+  const isHead = l => /^(\d{1,2}|[IVX]{1,4})[.)]\s+\S/.test(l) && l.length < 220;
+  const junk = l => !l.replace(/[|.…\/\s\-_]/g, "").length;
+  const raw = ttLines(text).filter(l => !junk(l));
+  // tách dòng có nhiều tiêu đề ghép (ví dụ "6. … | | 7. …")
+  const lines = []; raw.forEach((l, g) => { const parts = l.split(/\s*\|\s*(?=(?:\d{1,2}|[IVX]{1,4})[.)]\s+\S)/); for (const x of parts) lines.push({ t: x.replace(/^\|\s*|\s*\|\s*$/g, "").trim(), g }); });
+  const pre = [], secs = []; let cur = null, justHead = false;
+  for (const { t: l, g } of lines) {
+    if (!l) continue;
+    if (isHead(l)) { cur = { head: l, cols: [], notes: [], g }; secs.push(cur); justHead = false; continue; }
+    const cells = l.split("|").map(x => x.trim()).filter(x => x && !junk(x));
+    if (justHead && cur && cells.length && /^[a-zà-ỹđ]/.test(cells[0])) { cur.cols[cur.cols.length - 1] += " " + cells[0]; cur.cols.push(...cells.slice(1)); justHead = false; continue; }
+    justHead = false;
+    if (cells.length >= 3 && cur) { const tg = secs.find(x => x.g === cur.g && !x.cols.length); if (tg) { tg.cols = cells; justHead = tg === cur; } continue; }
+    if (cells.length >= 3) continue;
+    const nt = cells.join("; ");
+    if (!nt.replace(/\b(Nam|Nữ)\b|[;\s]/g, "")) continue;
+    if (cur && cur.cols.length && /^\(.*\)$/.test(nt)) continue;
+    if (cur && cur.cols.length && cells.length === 2 && !/[:.…]/.test(nt)) continue;
+    (cur ? cur.notes : pre).push(nt.replace(/[.…]{3,}/g, "…"));
+  }
+  return { pre, secs };
+}
+function ttFromDoc(p){
+  const { pre, secs } = ttDocSections(p.yeuCau), st = p.soLieu ? ttStats() : null;
+  const isForm = secs.filter(s => s.cols.length).length >= 2;
+  const titleLine = pre.find(l => l === l.toUpperCase() && /[A-ZĐ]/.test(l) && l.length > 10) || pre[0] || "";
+  const chuDe = p.chuDe || (isForm ? "Hướng dẫn ghi " + titleLine.replace(/[.…]{2,}.*$/, "").trim().toLowerCase() : titleLine) || "Nội dung tuyên truyền";
+  const phan = [];
+  const info = pre.filter(l => /:/.test(l) && !/^\(/.test(l));
+  if (pre.length) phan.push({ tieuDe: isForm ? "Thông tin chung của phiếu" : "Giới thiệu", body: (isForm ? "Phần đầu phiếu cần ghi đầy đủ trước khi ghi các danh sách.\n" : "") + (info.length ? info : pre.slice(0, 8)).map(l => "- " + l.replace(/[.…]{3,}/g, "…")).join("\n") });
+  const sig = [];
+  for (const s of secs) {
+    const tieuDe = s.head.replace(/^(\d{1,2}|[IVX]{1,4})[.)]\s+/, "").replace(/\s*\(.*\)\s*$/, "").trim();
+    const paren = (s.head.match(/\(([^)]+)\)/) || [])[1];
+    const notes = s.notes.filter(n => { if (/ký|ky ghi|thẩm định|lập phiếu/i.test(n)) { sig.push(n); return false; } return true; });
+    let body = "";
+    if (s.cols.length) {
+      const cols = s.cols.filter((c, i, a) => a.indexOf(c) === i && !/^(nam|nữ)$/i.test(c));
+      body = `Ghi mỗi người hoặc mỗi sự kiện phát sinh trong tháng trên một dòng, gồm ${cols.length} cột:\n` + cols.map(c => { const h = ttColHint(c); return "- " + c.replace(/\s+/g, " ") + (h ? ": " + h + "." : "."); }).join("\n");
+    }
+    if (paren) body += (body ? "\n" : "") + "- Lưu ý: " + paren.charAt(0).toLowerCase() + paren.slice(1) + ".";
+    if (notes.length) body += (body ? "\n" : "") + notes.map(n => (s.cols.length ? "- " : "") + n).join("\n");
+    phan.push({ tieuDe, body: body || "(Bổ sung nội dung cho phần này.)" });
+  }
+  if (isForm) phan.push({ tieuDe:"Những lưu ý chung khi ghi phiếu", body:"Phiếu là nguồn số liệu gốc để tổng hợp báo cáo dân số của xã, vì vậy cần ghi đầy đủ, chính xác và đúng thời hạn.\n- Chỉ ghi các sự kiện phát sinh trong tháng báo cáo.\n- Viết rõ ràng, không tẩy xóa; nếu ghi sai thì gạch ngang và ghi lại bên cạnh.\n- Mục nào trong tháng không có sự kiện thì để trống, không bỏ phiếu.\n- Đối chiếu với sổ ghi chép ban đầu trước khi nộp.\n- Ký, ghi rõ họ tên và nộp phiếu cho cán bộ dân số xã đúng hạn." + (sig.length ? "\n- " + sig.join("; ") : "") });
+  else if (!secs.length) { const paras = ttLines(p.yeuCau).filter(l => l.length > 25).slice(0, 30); for (let i = 0; i < paras.length; i += 6) phan.push({ tieuDe: `Nội dung ${i / 6 + 1}`, body: paras.slice(i, i + 6).map(x => "- " + x).join("\n") }); }
+  if (st && st.lines.length && !isForm) phan.push({ tieuDe:`Số liệu của xã (${st.ky})`, body: st.lines.map(l => "- " + l + ".").join("\n") });
+  phan.push({ ...TT_KYNANG });
+  const kh = ttQuotedSlogans(p.yeuCau);
+  const khauHieu = (kh.length ? kh : isForm ? ["Thu thập thông tin dân số đầy đủ, chính xác, kịp thời", "Số liệu chính xác từ thôn, báo cáo đúng từ xã", "Cộng tác viên dân số: gần dân, hiểu dân, ghi đúng, báo kịp", "Mỗi phiếu đúng hôm nay, số liệu tin cậy ngày mai"] : TT_LIB.find(L => L.k === "ngaydanso").khauHieu).slice(0, 8);
+  const slides = [];
+  for (const x of phan) {
+    const ls = ttLines(x.body), bul = ls.filter(l => /^[-–•]/.test(l)).map(l => l.replace(/^[-–•]\s*/, "")), para = ls.filter(l => !/^[-–•]/.test(l));
+    const items = (bul.length ? bul : para).map(s => s.length > 110 ? s.slice(0, s.lastIndexOf(" ", 105)) + "…" : s);
+    const per = 6; for (let i = 0; i < items.length; i += per) slides.push({ tieuDe: x.tieuDe + (items.length > per ? ` (${i / per + 1})` : ""), y: items.slice(i, i + per), ghiChu: [para.join(" "), items.join("; ")].filter(Boolean).join(" ") });
+  }
+  const cauHoi = [];
+  if (isForm) { const tg = info.find(l => /thời điểm|thoi diem/i.test(l)); if (tg) cauHoi.push({ hoi:"Phiếu được lập vào thời điểm nào?", dapAn: tg.split(":").slice(1).join(":").split(";")[0].trim() }); }
+  for (const s of secs.filter(s => s.cols.length).slice(0, 5)) { const t = s.head.replace(/^(\d{1,2}|[IVX]{1,4})[.)]\s+/, "").replace(/\s*\(.*\)\s*$/, ""); cauHoi.push({ hoi:`Mục “${t}” gồm những cột thông tin nào?`, dapAn: s.cols.filter((c, i, a) => a.indexOf(c) === i && !/^(nam|nữ)$/i.test(c)).join(", ") + "." }); }
+  return {
+    nguon:"cấu trúc văn bản đã tải",
+    khauHieu,
+    banner:{ tieuDe: khauHieu[0], phuDe: chuDe, dongCuoi: [ttUnit(), p.dip].filter(Boolean).join(" · ") },
+    taiLieu:{ tieuDe: chuDe, doiTuong: p.doiTuong, thoiLuong:"90 phút", mucTieu: isForm ? ["Hiểu ý nghĩa, thời điểm lập và nơi nộp phiếu.", "Ghi đúng, đủ từng mục, từng cột của phiếu.", "Tránh các lỗi thường gặp để số liệu tổng hợp chính xác."] : [`Nắm được nội dung chính về ${chuDe.toLowerCase()}.`, "Biết cách tuyên truyền, vận động tại cộng đồng."], phan, cauHoi },
+    trinhBay:{ tieuDe: chuDe, phuDe: p.dip || (isForm ? "Tài liệu tập huấn cho cộng tác viên dân số" : ""), slides: slides.slice(0, Math.max(4, (p.soTrang || 10) + 4)) }
+  };
+}
+function ttUseDoc(p){
+  if (TT_LIB.some(L => L.ten === p.chuDe)) return false;
+  const named = noDia([p.chuDe, p.ten].join(" "));
+  if (named && TT_LIB.some(L => L.re.test(named))) return false;
+  const { secs } = ttDocSections(p.yeuCau);
+  return secs.length >= 2 || (p.chuDe && p.yeuCau.length > 200) || (!TT_LIB.some(L => L.re.test(noDia(p.yeuCau))) && p.yeuCau.length > 200);
+}
+
 /* ===================== Tuyên truyền: banner, tài liệu tập huấn, bản trình bày ===================== */
 const TT = { list:null, id:null, tab:"yc", imgs:[], busy:false };
 const TT_OUT = [["banner","Banner, khẩu hiệu","Ảnh PNG độ phân giải cao để in, treo, đăng"],["taiLieu","Tài liệu tập huấn","Tệp Word (.docx), thể thức Times New Roman, A4"],["trinhBay","Bản trình bày","Tệp PowerPoint (.pptx), khổ 16:9, có lời thuyết trình"]];
@@ -1219,7 +1315,7 @@ VĂN BẢN YÊU CẦU TUYÊN TRUYỀN:
 ${(p.yeuCau || "(không có, soạn theo chủ đề)").slice(0, 60000)}`;
 }
 function ttNormalize(c, p){
-  const fb = ttFromLib(p), o = { nguon:"Claude", khauHieu: Array.isArray(c.khauHieu) && c.khauHieu.length ? c.khauHieu.map(String) : fb.khauHieu };
+  const fb = ttUseDoc(p) ? ttFromDoc(p) : ttFromLib(p), o = { nguon:"Claude", khauHieu: Array.isArray(c.khauHieu) && c.khauHieu.length ? c.khauHieu.map(String) : fb.khauHieu };
   o.banner = { ...fb.banner, ...(c.banner || {}) };
   if (c.taiLieu) { const t = c.taiLieu; o.taiLieu = { ...fb.taiLieu, ...t, mucTieu: Array.isArray(t.mucTieu) ? t.mucTieu.map(String) : fb.taiLieu.mucTieu, phan: Array.isArray(t.phan) && t.phan.length ? t.phan.map(x => ({ tieuDe:String(x.tieuDe || ""), body: String(x.body || [].concat(x.noiDung || []).join("\n") + (x.y ? "\n" + [].concat(x.y).map(v => "- " + v).join("\n") : "")) })) : fb.taiLieu.phan, cauHoi: Array.isArray(t.cauHoi) ? t.cauHoi.map(x => ({ hoi:String(x.hoi || ""), dapAn:String(x.dapAn || "") })) : fb.taiLieu.cauHoi }; }
   else o.taiLieu = fb.taiLieu;
@@ -1234,7 +1330,7 @@ async function ttGenerate(useAI){
   if (!TT_OUT.some(([k]) => p.out[k])) { toast("Chọn ít nhất một sản phẩm cần tạo.", true); return; }
   if (p.content && !await confirmBox("Soạn lại sẽ thay nội dung đang có (kể cả phần anh/chị đã sửa). Tiếp tục?", "Soạn lại")) return;
   if (!useAI || !cap.sample) {
-    p.content = ttFromLib(p); if (!p.ten) p.ten = p.chuDe || p.content.taiLieu.tieuDe; TT.tab = p.out.banner ? "banner" : p.out.taiLieu ? "tailieu" : "trinhbay"; ttSaveSoon(p); render();
+    p.content = ttUseDoc(p) ? ttFromDoc(p) : ttFromLib(p); if (!p.ten) p.ten = p.chuDe || p.content.taiLieu.tieuDe; TT.tab = p.out.banner ? "banner" : p.out.taiLieu ? "tailieu" : "trinhbay"; ttSaveSoon(p); render();
     toast("Đã soạn theo " + p.content.nguon + ". Anh/chị xem và chỉnh sửa trước khi tải."); return;
   }
   TT.busy = true; render();
@@ -1429,13 +1525,13 @@ function ttTabYC(p){
         ${p.out.banner ? `<div class="field"><label>Khổ banner</label>${Object.entries(TT_SIZES).map(([k, z]) => `<label class="row small" style="gap:6px"><input type="checkbox" data-ttsize="${k}" ${p.sizes.includes(k) ? "checked" : ""}>${esc(z.ten)}</label>`).join("")}</div>` : ""}
         ${p.out.trinhBay ? `<div class="field"><label>Số trang nội dung của bản trình bày</label><input class="inp" type="number" min="4" max="25" data-tt="soTrang" data-num="1" value="${p.soTrang || 10}" style="width:100px"></div>` : ""}
         <div class="field"><label>Màu chủ đạo</label><div class="row" style="gap:6px">${Object.entries(TT_THEMES).map(([k, t]) => `<button class="ttsw ${p.theme === k ? "on" : ""}" data-act="tt" data-a="theme" data-v="${k}" title="${esc(t.ten)}" style="background:linear-gradient(135deg,${t.a},${t.b})"><span>${esc(t.ten)}</span></button>`).join("")}</div></div>
-        ${st ? `<label class="row small" style="gap:6px;align-items:flex-start"><input type="checkbox" data-tt="soLieu" data-bool="1" ${p.soLieu ? "checked" : ""}><span>Đưa số liệu của xã (${esc(st.ky)}) vào nội dung</span></label>` : ""}
+        ${st ? `<label class="row small" style="gap:6px;align-items:flex-start;flex-wrap:nowrap"><input type="checkbox" data-tt="soLieu" data-bool="1" ${p.soLieu ? "checked" : ""}><span>Đưa số liệu của xã (${esc(st.ky)}) vào nội dung</span></label>` : ""}
       </div>
       <div class="panel stack"><h2>Soạn nội dung</h2>
         ${TT.busy ? `<div class="status"><span class="spin"></span>Claude đang soạn khẩu hiệu, tài liệu và bản trình bày… thường mất 1–2 phút.</div>` : `
-        <button class="btn primary" data-act="tt" data-a="gen-ai" ${ai ? "" : "disabled"}>Soạn bằng Claude</button>
+        <button class="btn primary" data-act="tt" data-a="gen-ai">${ai ? "Soạn bằng Claude" : "Kết nối Claude để soạn"}</button>
         <button class="btn" data-act="tt" data-a="gen-lib">Soạn theo mẫu có sẵn</button>`}
-        <p class="small muted" style="margin:0">${ai ? "Claude đọc văn bản yêu cầu (cả ảnh) và soạn riêng cho chủ đề." : "Trợ lý Claude chưa sẵn sàng ở chế độ xem này" + (window.__STANDALONE ? " (nhập khóa API ở Thông tin cơ quan để bật)" : "") + "."} “Mẫu có sẵn” dùng thư viện ${TT_LIB.length} chủ đề dân số kèm khẩu hiệu trong văn bản yêu cầu; không cần mạng. Nội dung nào cũng có thể sửa trước khi tải.</p>
+        <p class="small muted" style="margin:0">${ai ? "Claude đọc văn bản yêu cầu (cả ảnh) và soạn riêng cho chủ đề." : "Claude chưa được kết nối trên máy này. Bấm nút trên để xem cách kết nối."} “Mẫu có sẵn” không cần Claude: chủ đề thuộc thư viện ${TT_LIB.length} chủ đề dân số thì dùng nội dung thư viện; chủ đề khác (ví dụ hướng dẫn ghi phiếu) thì dựng tài liệu theo đúng cấu trúc văn bản đã tải. Nội dung nào cũng có thể sửa trước khi tải.</p>
       </div></div></div>`;
 }
 function ttTabBanner(p){
@@ -1510,6 +1606,30 @@ function afterTT(){
   if (TT.tab === "banner" || TT.tab === "tai") ttRedraw();
 }
 const ttRedrawSoon = debounce(ttRedraw, 250);
+function ttKeyModal(){
+  if (!window.__STANDALONE) { openModal(`<div class="sheet narrow"><h2>Claude chưa sẵn sàng</h2><p style="margin:0">Trợ lý Claude chỉ chạy khi mở trang này trong claude.ai hoặc ứng dụng Claude, đăng nhập bằng tài khoản chủ trang hoặc tài khoản được mời. Trong lúc chờ, có thể bấm “Soạn theo mẫu có sẵn”.</p><div class="row" style="justify-content:flex-end"><button class="btn primary" id="tk-x">Đóng</button></div></div>`); $("#tk-x").onclick = closeModal; return; }
+  const fb = window.__MODE === "fb";
+  openModal(`<div class="sheet narrow"><h2>Kết nối Claude để soạn nội dung</h2>
+    <p style="margin:0" class="small">Trang trên GitHub gọi Claude bằng <b>khóa API của Anthropic</b> (tính phí theo lượng dùng, mỗi lần soạn một bộ sản phẩm tốn rất ít). Cách lấy khóa:</p>
+    <ol class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px"><li>Vào <b>console.anthropic.com</b>, đăng nhập hoặc tạo tài khoản.</li><li>Mục <b>Billing</b>: nạp tiền (có thể nạp mức thấp nhất).</li><li>Mục <b>API Keys</b> → <b>Create Key</b>, sao chép khóa bắt đầu bằng <code>sk-ant-</code>.</li><li>Dán khóa vào ô dưới đây rồi bấm Lưu và thử.</li></ol>
+    <div class="field"><label for="tk-key">Khóa API</label><input class="inp" id="tk-key" type="password" autocomplete="off" placeholder="sk-ant-…"></div>
+    ${fb ? `<label class="row small" style="gap:6px;align-items:flex-start;flex-wrap:nowrap"><input type="checkbox" id="tk-share" checked><span>Dùng chung khóa cho các tài khoản đăng nhập trang (lưu trong kho Firebase, chỉ các email được phép mới đọc được) để không phải nhập lại trên từng máy.</span></label>` : `<p class="small muted" style="margin:0">Khóa chỉ lưu trong trình duyệt của máy này.</p>`}
+    <div class="status" id="tk-st"></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="tk-x">Để sau</button><button class="btn primary" id="tk-ok">Lưu và thử</button></div></div>`);
+  $("#tk-x").onclick = closeModal;
+  $("#tk-ok").onclick = async () => {
+    const key = $("#tk-key").value.trim(), st = $("#tk-st"); if (!/^sk-ant-/.test(key)) { st.className = "status err"; st.textContent = "Khóa phải bắt đầu bằng sk-ant-."; return; }
+    try { localStorage.setItem("ths_api_key", key); } catch(e){ st.className = "status err"; st.textContent = "Trình duyệt không cho lưu khóa."; return; }
+    st.className = "status"; st.innerHTML = `<span class="spin"></span>Đang thử kết nối…`;
+    const smp = await useCap("sample");
+    try { await smp("Trả lời đúng một từ: OK", { modelTier:"default" }); }
+    catch(e){ try { localStorage.removeItem("ths_api_key"); } catch(_){} st.className = "status err"; st.textContent = "Chưa kết nối được: " + (e && e.message || e.code || "lỗi") + ". Kiểm tra khóa và số dư tài khoản."; return; }
+    cap.sample = smp; try { const l = await smp.limits(); cap.images = l && l.images || null; } catch(e){}
+    if (fb && $("#tk-share")?.checked && cap.db) { try { await cap.db.doc("cfg/apikey").set({ key, by: window.__authUser || "", at: Date.now() }); } catch(e){ toast("Đã kết nối trên máy này, nhưng chưa lưu dùng chung được.", true); } }
+    $("#st-ai").innerHTML = `<span class="dot"></span>Trợ lý đọc tệp sẵn sàng`;
+    closeModal(); toast("Đã kết nối Claude."); render();
+  };
+}
 async function ttAct(b){
   const a = b.dataset.a, p = ttCur();
   const listOf = path => ttGet(p.content, path);
@@ -1522,7 +1642,7 @@ async function ttAct(b){
     case "topic": { const L = TT_LIB.find(x => x.k === b.dataset.k); p.chuDe = L.ten; ttSaveSoon(p); render(); break; }
     case "theme": p.theme = b.dataset.v; ttSaveSoon(p); render(); break;
     case "clearsrc": p.nguon = []; TT.imgs = []; ttSaveSoon(p); render(); break;
-    case "gen-ai": ttGenerate(true); break;
+    case "gen-ai": if (!cap.sample) ttKeyModal(); else ttGenerate(true); break;
     case "gen-lib": ttGenerate(false); break;
     case "usekh": p.content.banner.tieuDe = p.content.khauHieu[+b.dataset.i]; ttSaveSoon(p); render(); break;
     case "mv": { const L = listOf(b.dataset.list), i = +b.dataset.i, j = i + +b.dataset.d; if (j < 0 || j >= L.length) break; [L[i], L[j]] = [L[j], L[i]]; ttSaveSoon(p); render(); break; }
@@ -3578,7 +3698,7 @@ document.addEventListener("click", async e => {
       if (!Object.keys(add).length) { toast("Kho dùng chung đã có đủ các mục của máy này."); break; }
       if (!(await confirmBox(`Đưa ${Object.keys(add).length} mục từ máy này lên kho dùng chung? Mục đã có trên kho được giữ nguyên.`, "Đưa lên"))) break;
       await window.__store.putAll(add); toast("Đã đưa lên. Đang tải lại…"); setTimeout(() => location.reload(), 600); break; }
-    case "sa-clearkey": try { localStorage.removeItem("ths_api_key"); } catch(e){} location.reload(); break;
+    case "sa-clearkey": try { localStorage.removeItem("ths_api_key"); } catch(e){} if (window.__MODE === "fb" && cap.db) { try { await cap.db.doc("cfg/apikey").delete(); } catch(e){} } location.reload(); break;
     case "savesettings": readSettingsForm(); await store.putSettings(); setNav(); toast("Đã lưu thông tin cơ quan."); break;
     case "db-add": readSettingsForm(); S.settings.diaBan = [...(S.settings.diaBan||[]), { ten:"", thon:"" }]; render(); $$("[data-db-name]").pop()?.focus(); break;
     case "db-rm": { readSettingsForm(); const i = +b.dataset.i, d = (S.settings.diaBan||[])[i]; if (d && (d.ten || d.thon) && !(await confirmBox(`Xóa địa bàn "${d.ten || "chưa đặt tên"}" khỏi danh sách? Phiếu đã lưu không bị xóa.`, "Xóa", true))) break; S.settings.diaBan.splice(i, 1); render(); break; }
@@ -3619,10 +3739,11 @@ document.addEventListener("keydown", e => {
   if (usr) { try { canSee = canSee && ((await usr.isOwner()) || (await usr.canEdit())); } catch(e){} }
   cap.access = !db ? "nodb" : canSee ? "ok" : "noperm";
   cap.db = db; cap.sample = sample; cap.downloads = downloads;
-  if (sample) { try { const l = await sample.limits(); cap.images = l && l.images || null; } catch(e){} }
+  if (!sample && window.__MODE === "fb" && db) { try { const k = await db.doc("cfg/apikey").get(); if (k.exists && k.data().key) { localStorage.setItem("ths_api_key", k.data().key); cap.sample = await useCap("sample"); } } catch(e){} }
+  if (cap.sample) { try { const l = await cap.sample.limits(); cap.images = l && l.images || null; } catch(e){} }
   if (window.__STANDALONE) cap.access = "ok";
   $("#st-db").innerHTML = window.__MODE === "fb" ? (window.__fbError ? `<span class="dot off"></span>Lỗi kết nối kho dùng chung` : `<span class="dot"></span>Số liệu dùng chung (Firebase)`) : window.__STANDALONE ? `<span class="dot"></span>Dữ liệu lưu trong trình duyệt máy này` : cap.access === "ok" ? `<span class="dot"></span>Dữ liệu được lưu tự động` : cap.access === "noperm" ? `<span class="dot off"></span>Tài khoản này chưa có quyền xem số liệu` : `<span class="dot off"></span>Chưa kết nối dữ liệu – cần đăng nhập`;
-  $("#st-ai").innerHTML = window.__STANDALONE && !sample ? `<span class="dot off"></span>Chưa kết nối Claude (nhập khóa API ở Thông tin cơ quan)` : sample ? `<span class="dot"></span>Trợ lý đọc tệp sẵn sàng${cap.images?"":" (không đọc ảnh)"}` : `<span class="dot off"></span>Trợ lý đọc tệp chưa sẵn sàng`;
+  $("#st-ai").innerHTML = window.__STANDALONE && !cap.sample ? `<span class="dot off"></span>Chưa kết nối Claude (nhập khóa API ở Thông tin cơ quan)` : cap.sample ? `<span class="dot"></span>Trợ lý đọc tệp sẵn sàng${cap.images?"":" (không đọc ảnh)"}` : `<span class="dot off"></span>Trợ lý đọc tệp chưa sẵn sàng`;
   try { await store.loadAll(); await store.loadYear(S.pY); } catch(e){ toast("Không tải được dữ liệu đã lưu: " + (e && e.message || e.code || ""), true); }
   S.view = "home"; bindTips();
   if (window.__MODE === "fb") S.authInfo = window.__authUser ? { user: window.__authUser, ten: "" } : null; else if (window.__auth) S.authInfo = await window.__auth.get();

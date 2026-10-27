@@ -3732,6 +3732,19 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("#modal").hidden && !$("#modal").dataset.lock) closeModal();
 });
 
+/* Điều chỉnh địa bàn (27/10/2026): An Thuỷ gồm Lộc Thượng, Lộc Hạ, Lộc An, Thạch Tân, Phú Thọ; Lộc Thuỷ gồm Tuy Lộc, Án Xá */
+async function fixDiaBan(){
+  if (S.settings.diaBanFix || !cap.db) return;
+  const D = S.settings.diaBan || [], key = l => splitList(l).map(stripPre).sort().join("|");
+  const A = D.find(d => noDia(d.ten) === "an thuy"), L = D.find(d => noDia(d.ten) === "loc thuy");
+  const OLD_A = key("Tuy Lộc\nÁn Xá"), OLD_L = key("Lộc Thượng\nLộc Hạ\nLộc An\nThạch Tân\nPhú Thọ");
+  if (A && L && key(A.thon) === OLD_A && key(L.thon) === OLD_L) {
+    [A.thon, L.thon] = [L.thon, A.thon];
+    const toL = new Set(splitList(L.thon).map(stripPre)), toA = new Set(splitList(A.thon).map(stripPre));
+    for (const ph of S.phieu) { const t = stripPre(ph.thon); const nd = toL.has(t) ? L.ten : toA.has(t) ? A.ten : null; if (nd && ph.diaBan && ph.diaBan !== nd) { ph.diaBan = nd; await store.put("phieu", ph); } }
+  }
+  S.settings.diaBanFix = 1; await store.putSettings();
+}
 /* ===================== Khởi động ===================== */
 (async function init(){
   const [db, sample, downloads, usr] = await Promise.all([useCap("db"), useCap("sample"), useCap("downloads"), useCap("user")]);
@@ -3745,6 +3758,7 @@ document.addEventListener("keydown", e => {
   $("#st-db").innerHTML = window.__MODE === "fb" ? (window.__fbError ? `<span class="dot off"></span>Lỗi kết nối kho dùng chung` : `<span class="dot"></span>Số liệu dùng chung (Firebase)`) : window.__STANDALONE ? `<span class="dot"></span>Dữ liệu lưu trong trình duyệt máy này` : cap.access === "ok" ? `<span class="dot"></span>Dữ liệu được lưu tự động` : cap.access === "noperm" ? `<span class="dot off"></span>Tài khoản này chưa có quyền xem số liệu` : `<span class="dot off"></span>Chưa kết nối dữ liệu – cần đăng nhập`;
   $("#st-ai").innerHTML = window.__STANDALONE && !cap.sample ? `<span class="dot off"></span>Chưa kết nối Claude (nhập khóa API ở Thông tin cơ quan)` : cap.sample ? `<span class="dot"></span>Trợ lý đọc tệp sẵn sàng${cap.images?"":" (không đọc ảnh)"}` : `<span class="dot off"></span>Trợ lý đọc tệp chưa sẵn sàng`;
   try { await store.loadAll(); await store.loadYear(S.pY); } catch(e){ toast("Không tải được dữ liệu đã lưu: " + (e && e.message || e.code || ""), true); }
+  try { await fixDiaBan(); } catch(e){}
   S.view = "home"; bindTips();
   if (window.__MODE === "fb") S.authInfo = window.__authUser ? { user: window.__authUser, ten: "" } : null; else if (window.__auth) S.authInfo = await window.__auth.get();
   if (window.__fbError) toast("Không kết nối được kho dùng chung: " + window.__fbError, true);

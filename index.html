@@ -358,6 +358,23 @@ table.g td.v.hl{animation:hl 1.6s ease-out}
 .imgt input.imgv.uns{background:#fff3c4;border-color:#d9a441;color:#5c3d00}
 .imgt input.imgv.bad{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
 @media (max-width:1080px){.imgwrap{grid-template-columns:minmax(0,1fr)}.imgpane{position:static}.imgbox{max-height:40vh}}
+.bt-wrap{max-height:70vh;overflow:auto}
+table.bt{border-collapse:separate;border-spacing:0;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.bt th,table.bt td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:3px 4px;background:var(--surface)}
+table.bt thead th{position:sticky;top:0;z-index:3;background:var(--surface-2);font-size:11px;font-weight:600;text-align:center;white-space:normal;line-height:1.25}
+table.bt thead tr:nth-child(2) th{top:26px}
+table.bt th.bt-grp{color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
+table.bt .bt-stt{position:sticky;left:0;z-index:2;width:34px;min-width:34px;text-align:center;font-weight:600}
+table.bt .bt-name{position:sticky;left:34px;z-index:2;min-width:250px;max-width:270px;white-space:normal}
+table.bt thead .bt-stt,table.bt thead .bt-name{z-index:4}
+table.bt td.bt-tx,table.bt th.bt-tx{font-weight:700;background:var(--surface-2);min-width:60px;text-align:right}
+table.bt .bt-first{border-left:2px solid var(--accent-soft)}
+table.bt tr.bt-h td{color:var(--muted);font-style:italic}
+table.bt input.btin{width:52px;border:1px solid transparent;border-radius:4px;padding:4px;text-align:right;background:transparent;font:inherit}
+table.bt input.btin:hover{border-color:var(--line)}
+table.bt input.btin:focus{border-color:var(--accent);background:var(--surface);outline:none;box-shadow:0 0 0 2px var(--accent-soft)}
+table.bt input.btin.slro{background:var(--auto);color:var(--auto-ink);font-weight:600}
+table.bt tbody tr:hover td{background:var(--accent-soft)}
 .ckl{display:flex;flex-direction:column}
 .cki{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
 .cki:first-child{border-top:0;padding-top:2px}
@@ -1695,7 +1712,7 @@ function render(){
   const m = $("#main");
   if (!S.loaded) return;
   if (S.view === "home") m.innerHTML = viewHome();
-  else if (S.view === "phieu") { m.innerHTML = viewPhieu(); afterPhieu(); }
+  else if (S.view === "phieu") { if (S.phMode === "ctv") { m.innerHTML = phModeBar() + viewPhieu(); afterPhieu(); } else { m.innerHTML = phModeBar() + viewBT(); afterBT(); } }
   else if (S.view === "diaban") { m.innerHTML = viewDiaBan(); afterDiaBan(); }
   else if (S.view === "solieu") { m.innerHTML = viewSoLieu(); afterSoLieu(); }
   else if (S.view === "reports") m.innerHTML = viewReports();
@@ -1706,6 +1723,10 @@ function render(){
   else if (S.view === "tuyentruyen") { m.innerHTML = viewTT(); afterTT(); }
   if (["reports","report","diaban","solieu"].includes(S.view)) m.insertAdjacentHTML("afterbegin", hubBar());
   const ab = accessBanner(); if (ab) m.insertAdjacentHTML("afterbegin", ab);
+}
+function phModeBar(){
+  const cur = S.phMode === "ctv" ? "ctv" : "thon";
+  return `<div class="hubbar" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="tablist" aria-label="Phiếu thu thập">${[["thon","Biểu tháng theo thôn","Mẫu Biểu 01-DSX theo 19 thôn: nhập, nhập từ Excel/ảnh, xuất Excel theo mẫu"],["ctv","Phiếu CTV chi tiết (P0/CTV)","Danh sách từng trường hợp sinh, chết, chuyển đi, đến… của cộng tác viên"]].map(([k, l, d]) => `<button role="tab" aria-selected="${cur === k}" data-act="phmode" data-v="${k}"><b>${l}</b><span>${d}</span></button>`).join("")}</div>`;
 }
 function hubBar(){
   const cur = S.view === "report" ? "reports" : S.view;
@@ -2409,6 +2430,7 @@ function slChecks(y){
     if (d.from !== 1 || ![...Array(d.to).keys()].every(i => mon[i+1])) continue;
     const items = [];
     for (const k of B01_KEYS) {
+      if (STOCK_KEYS.has(k)) continue; // số hiện có: định nghĩa ở biểu tháng và lũy kế có thể khác nhau
       const r = d.toanXa[k]; if (r == null) continue;
       const cum = STOCK_KEYS.has(k) ? mon[d.to].toanXa[k] : Array.from({length:d.to}, (_,i) => mon[i+1].toanXa[k] || 0).reduce((a,b) => a + b, 0);
       if (cum != null && cum !== r) items.push({ k, id:d.id, to:d.to, fix:cum, stock:STOCK_KEYS.has(k), mons: STOCK_KEYS.has(k) ? [d.to] : Array.from({length:d.to}, (_,i) => i+1).filter(i => mon[i].toanXa[k]), text:`${B01_NAMES[k]}: lũy kế đã báo cáo ${r}, cộng dồn hằng tháng ${cum} (lệch ${r - cum > 0 ? "+" : ""}${r - cum})` });
@@ -2455,7 +2477,7 @@ function slTabThang(y, mons){
       ${dbs.length ? `<div class="tblwrap"><table class="rv"><thead><tr><th>Chỉ tiêu</th>${dbs.map(db => `<th class="n">${esc(db)}</th>`).join("")}<th class="n">Cộng địa bàn</th><th class="n">Toàn xã</th></tr></thead>
         <tbody>${B01_KEYS.map(k => { const s = dbs.reduce((a, db) => a + (sel.perDb[db][k] || 0), 0), t = sel.toanXa[k]; return `<tr data-k="${k}" class="${S.slHi && S.slHi.k === k ? "slhl" : ""}"><td class="nw">${esc(B01_NAMES[k])}</td>${dbs.map(db => `<td class="n">${sel.perDb[db][k] || ""}</td>`).join("")}<td class="n">${s}</td><td class="n" style="${t != null && t !== s ? "color:var(--danger);font-weight:700" : ""}">${t ?? ""}</td></tr>`; }).join("")}</tbody></table></div>`
         : `<p class="muted small" style="margin:0">Tệp tháng này không chia theo địa bàn.</p>`}
-      ${sel.perThon && Object.keys(sel.perThon).length ? `<details><summary class="small">Chi tiết theo thôn (từ ảnh biểu, ${Object.keys(sel.perThon).length} thôn)</summary><div class="tblwrap" style="margin-top:6px"><table class="rv"><thead><tr><th>Chỉ tiêu</th>${Object.entries(sel.perThon).map(([t, v]) => `<th class="n">${esc(t)}<br><span class="muted" style="font-weight:400;text-transform:none">${esc(v._db || "")}</span></th>`).join("")}</tr></thead><tbody>${B01_KEYS.filter(k => Object.values(sel.perThon).some(v => v[k] != null)).map(k => `<tr><td class="nw">${esc(B01_NAMES[k])}</td>${Object.values(sel.perThon).map(v => `<td class="n">${v[k] ?? ""}</td>`).join("")}</tr>`).join("")}${Object.entries(sel.them || {}).map(([lab, v]) => `<tr><td class="nw muted">${esc(lab)}</td>${Object.keys(sel.perThon).map(t => `<td class="n muted">${v[t] ?? ""}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>` : ""}
+      ${sel.perThon && Object.keys(sel.perThon).length ? `<details><summary class="small">Chi tiết theo thôn (từ ảnh biểu, ${Object.keys(sel.perThon).length} thôn)</summary><div class="tblwrap" style="margin-top:6px"><table class="rv"><thead><tr><th>Chỉ tiêu</th>${Object.entries(sel.perThon).map(([t, v]) => `<th class="n">${esc(t)}<br><span class="muted" style="font-weight:400;text-transform:none">${esc(v._db || "")}</span></th>`).join("")}</tr></thead><tbody>${MAU_KEYS.filter(k => Object.values(sel.perThon).some(v => v[k] != null)).map(k => `<tr><td class="nw">${esc(B01_NAMES[k] || MAU_NAME[k])}</td>${Object.values(sel.perThon).map(v => `<td class="n">${v[k] ?? ""}</td>`).join("")}</tr>`).join("")}${Object.entries(sel.them || {}).map(([lab, v]) => `<tr><td class="nw muted">${esc(lab)}</td>${Object.keys(sel.perThon).map(t => `<td class="n muted">${v[t] ?? ""}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>` : ""}
       <div class="row small muted" style="gap:8px"><span>Nguồn: ${esc((sel.nguon||[]).join("; "))}</span><button class="btn sm" data-act="sled" data-id="${sel.id}">Sửa số liệu tháng này</button><button class="btn sm ghost danger" data-act="sldel" data-id="${sel.id}">Xóa số liệu tháng này</button></div></div></div>`;
 }
 function slTabLuyke(y, lks){
@@ -2535,7 +2557,7 @@ async function slPropagate(d, txChanges, why){
   const out = [];
   for (const lk of S.solieu.filter(x => x.loai === "b01_luyke" && x.nam === d.nam && x.from <= d.from && x.to >= d.from)) {
     const ch = [];
-    for (const [k, dv] of Object.entries(delta)) { if (!dv) continue; if (STOCK_KEYS.has(k) && lk.to !== d.from) continue; const ov = lk.toanXa[k]; if (ov == null) continue; const nv = Math.max(0, ov + dv); if (nv !== ov) { ch.push({ k, db:"", old: ov, new: nv }); lk.toanXa[k] = nv; } }
+    for (const [k, dv] of Object.entries(delta)) { if (!dv) continue; if (STOCK_KEYS.has(k)) continue; const ov = lk.toanXa[k]; if (ov == null) continue; const nv = Math.max(0, ov + dv); if (nv !== ov) { ch.push({ k, db:"", old: ov, new: nv }); lk.toanXa[k] = nv; } }
     if (ch.length) { await slSaveDoc(lk, ch, why || `Tự cập nhật theo số liệu tháng ${pad2(d.from)}`); out.push(lk); }
   }
   return out;
@@ -2571,6 +2593,7 @@ async function slSyncFull(why){
       const ms = []; for (let m = lk.from; m <= lk.to; m++) ms.push(mon[m]); if (ms.some(x => !x)) continue;
       const ch = [];
       for (const k of B01_KEYS) {
+        if (STOCK_KEYS.has(k)) continue; // số hiện có: giữ số đã báo cáo
         const vals = ms.map(x => x.toanXa[k]); if (vals.every(v => v == null)) continue;
         const cum = STOCK_KEYS.has(k) ? ms[ms.length - 1].toanXa[k] : vals.reduce((a, v) => a + (v || 0), 0);
         if (cum == null) continue; const ov = lk.toanXa[k] ?? null; if (ov === cum) continue;
@@ -2649,17 +2672,158 @@ function slImportHTML(){
     + (slPending.some(x => x.state === "new" || x.state === "diff") ? `<div class="row"><button class="btn sm primary" data-act="slsave">Lưu vào trang</button><button class="btn sm ghost" data-act="slclear">Bỏ</button></div>` : `<div class="row"><button class="btn sm ghost" data-act="slclear">Đóng</button></div>`);
 }
 const sameVals = (a, b) => JSON.stringify(a.toanXa) === JSON.stringify(b.toanXa) && JSON.stringify(a.perDb || null) === JSON.stringify(b.perDb || null) && JSON.stringify(a.rows || null) === JSON.stringify(b.rows || null);
+/* ===================== Biểu tháng theo thôn (mẫu Lệ Thuỷ, Biểu 01-DSX mở rộng) ===================== */
+const MAU_THANG = [
+  { stt:"1.", ten:"Tổng số trẻ sinh", k:"sinh_tong" }, { ten:"Trong tổng số:", head:true },
+  { ten:"- Số trẻ nam sinh ra", k:"sinh_nam" }, { ten:"- Số trẻ nữ sinh ra", k:"sinh_nu" }, { ten:"- Số trẻ sinh ra là con thứ 2", k:"sinh_con2" },
+  { ten:"- Số trẻ sinh ra là con thứ 3 trở lên", k:"sinh_con3" }, { ten:"- Số trẻ sinh ra của phụ nữ dưới 20 tuổi", k:"sinh_me20" },
+  { stt:"2.", ten:"Số phụ nữ đang mang thai tháng mới", k:"mangthai_dang" }, { ten:"Số phụ nữ mang thai hiện còn", k:"x_mt_hienco" }, { ten:"Số phụ nữ mang thai sàng lọc trong tháng", k:"x_sangloc" },
+  { stt:"3.", ten:"Số nữ đặt vòng tránh thai mới", k:"vong_moi" }, { ten:"Trong đó: số nữ thay vòng tránh thai", k:"vong_thay" }, { stt:"4.", ten:"Số nữ thôi sử dụng vòng tránh thai", k:"vong_thoi" },
+  { stt:"5.", ten:"Số nam mới triệt sản", k:"tsnam" }, { stt:"6.", ten:"Số nữ mới triệt sản", k:"tsnu" }, { stt:"7.", ten:"Số nữ mới cấy thuốc tránh thai", k:"cay_moi" },
+  { ten:"Trong đó: số thay que cấy tránh thai", k:"cay_thay" }, { stt:"8.", ten:"Số nữ thôi sử dụng cấy tránh thai", k:"cay_thoi" }, { stt:"9.", ten:"Số nữ tiêm thuốc tránh thai", k:"x_tiem" },
+  { stt:"10.", ten:"Số người sử dụng BCS", k:"x_bcs" }, { stt:"11.", ten:"Số người sử dụng TUTT", k:"x_tutt" }, { stt:"12.", ten:"Số người chết trong tháng", k:"x_chet" },
+  { stt:"13.", ten:"Số cặp kết hôn trong tháng", k:"x_kethon" }, { ten:"Số cặp kết hôn được tư vấn trong tháng", k:"x_tuvan_kh" },
+  { stt:"14.", ten:"Số người cao tuổi được khám sức khỏe định kỳ tháng", k:"x_nct" }, { stt:"15.", ten:"Số lượt tư vấn - truyền thông trong tháng", k:"x_tt" },
+  { stt:"16.", ten:"Số người chuyển đi trong tháng", k:"x_di" }, { stt:"17.", ten:"Số người chuyển đến trong tháng", k:"x_den" }];
+const MAU_KEYS = MAU_THANG.filter(r => r.k).map(r => r.k);
+const MAU_NAME = Object.fromEntries(MAU_THANG.filter(r => r.k).map(r => [r.k, r.ten.replace(/^- /, "")]));
+const BT = { y:null, m:null, data:null, dirty:false };
+const BT_ORDER = ["Lộc Thượng","Lộc Hạ","Lộc An","Thạch Tân","Phú Thọ","Tuy Lộc","Án Xá","Đại Phong","Thượng Phong","Thượng Giang","Phong Giang","Xuân Giang","Uẩn Áo","Quy Hậu","Đông Thành","Xuân Hồi","Xuân Thuỷ","Xuân Thượng","Xuân Hạ"].map(stripPre);
+function btThon(){ // theo thứ tự cột của mẫu biểu Lệ Thuỷ
+  const ix = t => { const i = BT_ORDER.indexOf(stripPre(t)); return i < 0 ? 999 : i; };
+  return diaBans().filter(d => d.ten).map(d => ({ db:d.ten, thon:[...d.thon].sort((a, b) => ix(a) - ix(b)) })).sort((a, b) => Math.min(...a.thon.map(ix)) - Math.min(...b.thon.map(ix)));
+}
+function btLoad(){
+  const y = BT.y, m = BT.m, d = S.solieu.find(x => x.id === `b01t-${y}-${pad2(m)}`);
+  BT.data = {}; for (const g of btThon()) for (const t of g.thon) { const src = d && d.perThon && (d.perThon[t] || Object.entries(d.perThon).find(([k]) => stripPre(k) === stripPre(t))?.[1]); BT.data[t] = {}; if (src) for (const k of MAU_KEYS) if (src[k] != null) BT.data[t][k] = src[k]; }
+  BT.dirty = false;
+}
+function btInit(){ if (BT.y) return; const now = new Date(); BT.y = now.getFullYear(); BT.m = now.getMonth() || 12; if (!now.getMonth()) BT.y--; btLoad(); }
+function btSum(k, list){ let any = false, s = 0; for (const t of list) { const v = BT.data[t] && BT.data[t][k]; if (v != null) { any = true; s += v; } } return any ? s : null; }
+function viewBT(){
+  btInit();
+  const G = btThon(), all = G.flatMap(g => g.thon), filled = all.filter(t => Object.keys(BT.data[t] || {}).length).length;
+  const d = S.solieu.find(x => x.id === `b01t-${BT.y}-${pad2(BT.m)}`);
+  const head1 = `<tr><th rowspan="2" class="bt-stt">STT</th><th rowspan="2" class="bt-name">Tên chỉ tiêu</th><th rowspan="2">Đơn vị tính</th><th rowspan="2" class="n bt-tx">Toàn xã</th>${G.map(g => `<th colspan="${g.thon.length}" class="bt-grp">${esc(g.db)}</th>`).join("")}</tr>`;
+  const head2 = `<tr>${G.map(g => g.thon.map((t, i) => `<th class="n${i === 0 ? " bt-first" : ""}">${esc(t)}</th>`).join("")).join("")}</tr>`;
+  const rows = MAU_THANG.map(r => r.head ? `<tr class="bt-h"><td></td><td>${esc(r.ten)}</td><td>Người</td><td class="bt-tx"></td>${G.map(g => g.thon.map((t, i) => `<td class="${i === 0 ? "bt-first" : ""}"></td>`).join("")).join("")}</tr>`
+    : `<tr><td class="bt-stt">${esc(r.stt || "")}</td><td class="bt-name">${esc(r.ten)}${r.k === "sinh_tong" ? ` <span class="chip auto" style="font-size:10px;padding:0 5px">nam + nữ</span>` : ""}</td><td class="muted small">Người</td><td class="n bt-tx" data-btx="${r.k}">${btSum(r.k, all) ?? ""}</td>
+      ${G.map(g => g.thon.map((t, i) => `<td class="${i === 0 ? "bt-first" : ""}"><input class="btin${r.k === "sinh_tong" ? " slro" : ""}" data-t="${esc(t)}" data-k="${r.k}" type="number" min="0" inputmode="numeric" value="${BT.data[t][r.k] ?? ""}"${r.k === "sinh_tong" ? ' readonly tabindex="-1"' : ""}></td>`).join("")).join("")}</tr>`).join("");
+  return `<div class="row between"><div><div class="eyebrow">Mẫu biểu tháng theo thôn · Biểu 01-DSX (Thông tư 01/2022/TT-BYT)</div><h1>Báo cáo thống kê chuyên ngành dân số tháng ${pad2(BT.m)}/${BT.y}</h1></div>
+      <div class="row"><label class="lbl" for="bt-m">Tháng</label><select class="inp" id="bt-m" style="width:auto">${Array.from({length:12}, (_, i) => `<option value="${i+1}" ${i+1 === BT.m ? "selected" : ""}>${pad2(i+1)}</option>`).join("")}</select>
+      <label class="lbl" for="bt-y">Năm</label><input class="inp" id="bt-y" type="number" value="${BT.y}" style="width:90px"></div></div>
+    <div class="row between"><span class="small muted">Đã nhập ${filled}/${all.length} thôn${d && d.perThon ? " · đã có số liệu lưu cho tháng này" : ""}. Cột Toàn xã tự cộng; Tổng số trẻ sinh tự bằng nam + nữ. Nhấn Enter để xuống ô dưới.</span>
+      <div class="row" style="gap:6px"><label class="btn sm" for="bt-file">Nhập từ Excel, ảnh</label><input type="file" id="bt-file" accept=".xls,.xlsx,image/*" hidden><button class="btn sm" data-act="bt-blank">Tải biểu trống</button><button class="btn sm" data-act="bt-xlsx">Xuất Excel theo mẫu</button><button class="btn sm primary" data-act="bt-save">Lưu và cập nhật số liệu</button></div></div>
+    <div class="tblwrap bt-wrap"><table class="bt">${head1}${head2}<tbody>${rows}</tbody></table></div>
+    <p class="small muted" style="margin:0">Khi lưu: số các thôn được cộng theo địa bàn vào Biểu 01 tháng ${pad2(BT.m)}/${BT.y}; cột Toàn xã của tháng, các bảng lũy kế, Kỳ báo cáo, Theo địa bàn, Tổng quan tự cập nhật. Các chỉ tiêu 9–17 (tiêm, BCS, TUTT, chết, kết hôn, người cao tuổi, truyền thông, chuyển đi, chuyển đến) được lưu theo thôn để xuất biểu và tổng hợp.</p>`;
+}
+function afterBT(){
+  const w = $(".bt-wrap"); if (!w) return;
+  const calc = t => { const a = BT.data[t].sinh_nam, b = BT.data[t].sinh_nu; if (a != null || b != null) { BT.data[t].sinh_tong = (a || 0) + (b || 0); const el = w.querySelector(`.btin[data-t="${CSS.escape(t)}"][data-k="sinh_tong"]`); if (el) el.value = BT.data[t].sinh_tong; } };
+  const all = btThon().flatMap(g => g.thon);
+  w.addEventListener("input", e => { const el = e.target; if (!el.classList.contains("btin")) return; const t = el.dataset.t, k = el.dataset.k; const v = el.value.trim() === "" ? null : Math.max(0, Math.round(+el.value)); if (v == null) delete BT.data[t][k]; else BT.data[t][k] = v; if (k === "sinh_nam" || k === "sinh_nu") calc(t); BT.dirty = true;
+    for (const kk of [k, "sinh_tong"]) { const c = w.querySelector(`[data-btx="${kk}"]`); if (c) c.textContent = btSum(kk, all) ?? ""; } });
+  w.addEventListener("keydown", e => { const el = e.target; if (e.key !== "Enter" || !el.classList.contains("btin")) return; e.preventDefault(); const ins = [...w.querySelectorAll(`.btin[data-t="${CSS.escape(el.dataset.t)}"]:not([readonly])`)]; const i = ins.indexOf(el); if (ins[i+1]) { ins[i+1].focus(); ins[i+1].select(); } });
+  const sw = async () => { if (BT.dirty && !await confirmBox("Số vừa nhập chưa lưu. Chuyển tháng sẽ bỏ các số này?", "Bỏ và chuyển")) { $("#bt-m").value = BT.m; $("#bt-y").value = BT.y; return; } BT.m = +$("#bt-m").value; BT.y = +$("#bt-y").value || BT.y; btLoad(); render(); };
+  $("#bt-m").onchange = sw; $("#bt-y").onchange = sw;
+  $("#bt-file").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; if (isImg(f)) imgStart(f); else btImportXlsx(f); };
+}
+async function btSave(){
+  const G = btThon(), y = BT.y, mth = BT.m, id = `b01t-${y}-${pad2(mth)}`;
+  const withData = G.filter(g => g.thon.some(t => Object.keys(BT.data[t]).length));
+  if (!withData.length) { toast("Chưa nhập số liệu thôn nào.", true); return; }
+  const part = withData.filter(g => g.thon.some(t => !Object.keys(BT.data[t]).length));
+  let d = S.solieu.find(x => x.id === id);
+  const preview = withData.map(g => { const cur = d && d.perDb && d.perDb[g.db] || {}; const ch = B01_KEYS.map(k => [k, btSum(k, g.thon)]).filter(([k, v]) => v != null && (cur[k] ?? null) !== v).map(([k, v]) => `${B01_NAMES[k].replace(/^– /, "")} ${cur[k] ?? "trống"}→${v}`); return `${g.db}: ${ch.length ? ch.slice(0, 6).join(", ") + (ch.length > 6 ? "…" : "") : "không đổi"}`; }).join(" | ");
+  if (!await confirmBox(`Cập nhật Biểu 01 tháng ${pad2(mth)}/${y} theo số các thôn? ${preview}${part.length ? ` · Lưu ý: ${part.map(g => g.db).join(", ")} còn thôn chưa nhập, số địa bàn sẽ chỉ cộng các thôn đã nhập.` : ""}`, "Lưu và cập nhật")) return;
+  if (!d) { d = { id, loai:"b01_thang", nam:y, from:mth, to:mth, toanXa:{}, perDb:{}, donVi:S.settings.donViBieu || "", nguon:[], importedAt:Date.now() }; S.solieu.push(d); }
+  d.perDb = d.perDb || {}; d.perThon = d.perThon || {};
+  for (const g of G) { d.perDb[g.db] = d.perDb[g.db] || {}; for (const t of g.thon) if (Object.keys(BT.data[t]).length) d.perThon[t] = { ...BT.data[t], _db: g.db }; }
+  const changes = [], keys = new Set();
+  for (const g of withData) { const tgt = d.perDb[g.db]; for (const k of B01_KEYS) { const v = btSum(k, g.thon); if (v == null) continue; const ov = tgt[k] ?? null; if (ov === v) continue; changes.push({ k, db:g.db, old:ov, new:v }); tgt[k] = v; keys.add(k); } }
+  changes.push(...slSyncDoc(d, keys));
+  d.nguon = [...new Set([...(d.nguon || []), "Biểu tháng theo thôn nhập trên trang"])];
+  if (changes.length) await slSaveDoc(d, changes, `Nhập biểu tháng theo thôn ${pad2(mth)}/${y}`); else await store.put("solieu", d);
+  const lks = changes.length ? await slPropagate(d, changes, `Tự cập nhật theo biểu thôn tháng ${pad2(mth)}`) : [];
+  BT.dirty = false; render();
+  toast(`Đã lưu biểu tháng ${pad2(mth)}/${y}${changes.length ? `: ${changes.filter(c => c.db).length} ô địa bàn, Toàn xã${lks.length ? `, ${lks.length} bảng lũy kế` : ""}` : " (số địa bàn không đổi)"}.`);
+}
+function btKeyOf(name){
+  const n = noDia(name);
+  if (!n || /^trong tong so\s*:?$/.test(n)) return "";
+  if (/hien con|thai hen/.test(n)) return "x_mt_hienco";
+  if (/sang loc/.test(n)) return "x_sangloc";
+  if (/mang thai/.test(n)) return "mangthai_dang";
+  if (/tiem thuoc/.test(n)) return "x_tiem";
+  if (/\bbcs\b|bao cao su/.test(n)) return "x_bcs";
+  if (/tutt|thuoc uong/.test(n)) return "x_tutt";
+  if (/chet la nu/.test(n)) return "";
+  if (/chet/.test(n)) return "x_chet";
+  if (/ket hon.*tu van|tu van.*ket hon/.test(n)) return "x_tuvan_kh";
+  if (/ket hon/.test(n)) return "x_kethon";
+  if (/nguoi cao tuoi|\bnct\b/.test(n)) return "x_nct";
+  if (/truyen thong/.test(n)) return "x_tt";
+  if (/chuyen di/.test(n)) return "x_di";
+  if (/chuyen den/.test(n)) return "x_den";
+  const k = metricOfName(name); return B01_KEYS.includes(k) ? k : "";
+}
+const btColName = c => String(c || "").replace(/^T\.\s*/i, "Thượng ").trim();
+async function btImportXlsx(f){
+  try {
+    const XLSX = await loadLib("XLSX"), wb = XLSX.read(await f.arrayBuffer(), { type:"array" }); let n = 0, used = "";
+    const all = btThon().flatMap(g => g.thon);
+    for (const sn of wb.SheetNames) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header:1, raw:true, defval:null });
+      const hi = rows.findIndex(r => (r || []).some(c => /tên chỉ tiêu/i.test(String(c || "")))); if (hi < 0) continue;
+      const cols = {}; (rows[hi] || []).forEach((c, j) => { const nm = btColName(c); if (!nm) return; const t = all.find(x => stripPre(x) === stripPre(nm)); if (t) cols[j] = t; });
+      if (Object.keys(cols).length < 2) continue;
+      let k0 = 0;
+      for (let i = hi + 1; i < rows.length; i++) { const r = rows[i] || []; const k = btKeyOf(String(r[1] ?? "") || String(r[0] ?? "")); if (!k) continue;
+        for (const [j, t] of Object.entries(cols)) { const v = cellNum(r[j]); if (typeof v === "number") { BT.data[t][k] = v; k0++; } } }
+      if (k0) { n += k0; used = sn; break; }
+    }
+    if (!n) { toast("Không tìm thấy bảng theo mẫu (dòng “Tên chỉ tiêu” và tên các thôn) có số liệu trong tệp.", true); return; }
+    for (const t of all) { const a = BT.data[t].sinh_nam, b = BT.data[t].sinh_nu; if (a != null || b != null) BT.data[t].sinh_tong = (a || 0) + (b || 0); }
+    BT.dirty = true; render(); toast(`Đã điền ${n} ô từ trang tính “${used}”. Kiểm tra rồi bấm Lưu.`);
+  } catch(e){ toast("Không đọc được tệp: " + (e.message || e), true); }
+}
+async function btExportXlsx(blank){
+  const ExcelJS = await loadLib("ExcelJS"), s = S.settings, G = btThon(), all = G.flatMap(g => g.thon);
+  const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet(`Thang ${pad2(BT.m)}`, { pageSetup:{ paperSize:9, orientation:"landscape", fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{ left:0.59, right:0.39, top:0.59, bottom:0.59, header:0.3, footer:0.3 } } });
+  const F = (sz, b, i) => ({ name:"Times New Roman", size:sz, bold:!!b, italic:!!i });
+  const nC = 4 + all.length, last = ws.getColumn(nC).letter, mid = Math.max(5, Math.floor(nC / 2) + 1);
+  ws.columns = [{ width:5 }, { width:40 }, { width:8 }, { width:9 }, ...all.map(() => ({ width:8.5 }))];
+  const put = (r, c, v, f, al) => { const cell = ws.getCell(r, c); cell.value = v; cell.font = f; if (al) cell.alignment = al; return cell; };
+  put(1, 1, "Biểu 01-DSX", F(13, true)); put(2, 1, "(Ban hành tại Thông tư số 01/2022/TT-BYT)", F(12, false, true)); put(3, 1, "Ngày nhận báo cáo: Chậm nhất 05 ngày làm việc kể từ thời điểm kết thúc kỳ báo cáo.", F(12, false, true));
+  put(1, mid, `Đơn vị báo cáo: ${s.donViBieu || [s.coQuan, s.chuQuan].filter(Boolean).join(" - ") || "……"}`, F(12)); put(2, mid, "Đơn vị nhận báo cáo:", F(12)); put(3, mid, "+ Chi cục Dân số tỉnh", F(12)); put(4, mid, `+ ${s.chuQuan ? s.chuQuan.replace(/^UBND/i, "UBND") : "UBND xã"}`, F(12));
+  ws.mergeCells(6, 1, 6, nC); put(6, 1, "BÁO CÁO THỐNG KÊ CHUYÊN NGÀNH DÂN SỐ", F(14, true), { horizontal:"center" });
+  ws.mergeCells(7, 1, 7, nC); put(7, 1, `THÁNG ${pad2(BT.m)} NĂM ${BT.y}`, F(14, true), { horizontal:"center" });
+  const B = { top:{ style:"thin" }, left:{ style:"thin" }, bottom:{ style:"thin" }, right:{ style:"thin" } }, HR = 9;
+  ws.mergeCells(HR, 1, HR, 2); put(HR, 1, "Tên chỉ tiêu", F(12, true), { horizontal:"center", vertical:"middle", wrapText:true });
+  put(HR, 3, "Đơn vị tính", F(12, true), { horizontal:"center", vertical:"middle", wrapText:true }); put(HR, 4, "Toàn xã", F(12, true), { horizontal:"center", vertical:"middle", wrapText:true });
+  all.forEach((t, i) => put(HR, 5 + i, t, F(11, true), { horizontal:"center", vertical:"middle", wrapText:true }));
+  ws.getRow(HR).height = 34;
+  MAU_THANG.forEach((r, i) => { const R = HR + 1 + i;
+    put(R, 1, r.stt || "", F(12, !!r.stt), { horizontal:"center", vertical:"middle" }); put(R, 2, r.ten, F(12, !!r.stt && !r.head), { vertical:"middle", wrapText:true }); put(R, 3, "Người", F(12), { horizontal:"center", vertical:"middle" });
+    if (!r.head) { all.forEach((t, j) => { const v = blank ? null : BT.data[t][r.k]; put(R, 5 + j, v ?? null, F(12), { horizontal:"center", vertical:"middle" }); });
+      const tot = blank ? null : btSum(r.k, all); const c = ws.getCell(R, 4); c.value = { formula:`SUM(${ws.getColumn(5).letter}${R}:${last}${R})`, result: tot ?? 0 }; c.font = F(12, true); c.alignment = { horizontal:"center", vertical:"middle" }; }
+    for (let c = 1; c <= nC; c++) ws.getCell(R, c).border = B; });
+  for (let c = 1; c <= nC; c++) ws.getCell(HR, c).border = B;
+  const fr = HR + MAU_THANG.length + 2, d = ndDate(todayISO());
+  ws.mergeCells(fr, mid, fr, nC); put(fr, mid, `${s.diaDanh || "……"}, ngày ${d.d} tháng ${d.m} năm ${d.y}`, F(13, false, true), { horizontal:"center" });
+  ws.mergeCells(fr + 1, 1, fr + 1, 3); put(fr + 1, 1, "NGƯỜI LẬP BIỂU", F(13, true), { horizontal:"center" });
+  ws.mergeCells(fr + 1, mid, fr + 1, nC); put(fr + 1, mid, (s.chucVu || "THỦ TRƯỞNG ĐƠN VỊ").toUpperCase(), F(13, true), { horizontal:"center" });
+  ws.mergeCells(fr + 5, 1, fr + 5, 3); put(fr + 5, 1, s.nguoiLap || "", F(13, true), { horizontal:"center" });
+  ws.mergeCells(fr + 5, mid, fr + 5, nC); put(fr + 5, mid, s.nguoiKy || "", F(13, true), { horizontal:"center" });
+  ws.views = [{ state:"frozen", xSplit:4, ySplit:HR }];
+  ws.pageSetup.printTitlesRow = `${HR}:${HR}`;
+  await saveFile(safeName(`Bieu 01-DSX theo thon thang ${pad2(BT.m)}-${BT.y}${blank ? " (trong)" : ""}`) + ".xlsx", new Blob([await wb.xlsx.writeBuffer()], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+}
+
 /* ===================== Đọc ảnh biểu viết tay (Biểu 01-DSX theo thôn/địa bàn) → xem, sửa → cập nhật số liệu ===================== */
 let IMG = null; // { file, url, nam, thang, cols:[{name, kind:'tong'|'thon'|'db'|'bo', db, thon}], rows:[{ten, key, vals:[], unsure:[]}], ai:bool }
-const IMG_KEYS = [["", "Không dùng"], ...B01_KEYS.map(k => [k, B01_NAMES[k].replace(/^– /, "")]), ["mangthai", "Phụ nữ mang thai trong tháng (mới)"], ["chet", "Số người chết"], ["kethon", "Số người kết hôn"]];
-function imgKeyOf(name){
-  const n = noDia(name);
-  if (/thai hen|con trong thang|dang mang thai|mang thai den cuoi/.test(n)) return "mangthai_dang";
-  if (/sang loc|tiem thuoc|thuoc uong|bao cao su|nguoi cao tuoi|nct|truyen thong|tham gia|tu van|chet la nu/.test(n)) return "";
-  if (/^chet|chet trong/.test(n)) return "chet";
-  if (/cap nam nu ket hon|ket hon trong thang/.test(n)) return "kethon";
-  return metricOfName(name) || "";
-}
+const IMG_KEYS = [["", "Không dùng"], ...MAU_KEYS.map(k => [k, MAU_NAME[k]])];
+function imgKeyOf(name){ return btKeyOf(name); }
 function imgColOf(name){
   const n = noDia(name);
   if (/toan xa|tong cong|tong so|^cong$|^tong$/.test(n)) return { kind:"tong" };
@@ -2778,7 +2942,7 @@ async function imgSave(){
   // lưu chi tiết theo thôn và các chỉ tiêu ngoài Biểu 01
   d.perThon = d.perThon || {}; d.them = d.them || {};
   IMG.cols.forEach((c, j) => { if (c.kind !== "thon" && c.kind !== "db") return; const nm = c.kind === "thon" ? c.thon : c.db; const t = d.perThon[nm] = { ...(d.perThon[nm] || {}), _db: c.db };
-    for (const r of IMG.rows) { const v = r.vals[j]; if (v == null) continue; if (r.key && B01_KEYS.includes(r.key) && c.kind === "thon") t[r.key] = v; else if (!r.key || !B01_KEYS.includes(r.key)) { const lab = r.key ? (IMG_KEYS.find(x => x[0] === r.key) || [, r.ten])[1] : r.ten; (d.them[lab] = d.them[lab] || {})[nm] = v; } } });
+    for (const r of IMG.rows) { const v = r.vals[j]; if (v == null) continue; if (r.key && c.kind === "thon") t[r.key] = v; else if (!r.key || !B01_KEYS.includes(r.key)) { const lab = r.key ? (IMG_KEYS.find(x => x[0] === r.key) || [, r.ten])[1] : r.ten; (d.them[lab] = d.them[lab] || {})[nm] = v; } } });
   changes.push(...slSyncDoc(d, keys));
   d.nguon = [...new Set([...(d.nguon || []), `Ảnh ${IMG.file.name}${IMG.ai ? " (Claude đọc, đã đối chiếu)" : " (nhập tay theo ảnh)"}`])];
   const why = `Cập nhật từ ảnh biểu ${IMG.file.name}`;
@@ -3977,6 +4141,10 @@ document.addEventListener("click", async e => {
     case "sled": S.slEd = { id: b.dataset.id, k: b.dataset.k || null, back: S.slTab }; render(); break;
     case "sledx": S.slTab = (S.slEd && S.slEd.back) || S.slTab; S.slEd = null; render(); break;
     case "sledsave": slEdSave(); break;
+    case "phmode": if (S.phMode !== b.dataset.v && BT.dirty && !await confirmBox("Số trong biểu tháng chưa lưu. Chuyển trang sẽ bỏ các số này?", "Bỏ và chuyển")) break; if (b.dataset.v === "thon") BT.y = null; S.phMode = b.dataset.v; render(); break;
+    case "bt-save": btSave(); break;
+    case "bt-xlsx": { const o = b.textContent; b.disabled = true; b.textContent = "Đang tạo…"; try { await btExportXlsx(false); } catch(e){ toast("Không tạo được tệp: " + (e.message || e), true); } b.disabled = false; b.textContent = o; break; }
+    case "bt-blank": { const o = b.textContent; b.disabled = true; b.textContent = "Đang tạo…"; try { await btExportXlsx(true); } catch(e){ toast("Không tạo được tệp: " + (e.message || e), true); } b.disabled = false; b.textContent = o; break; }
     case "slsyncfull": { if (!await confirmBox("Tính lại toàn bộ số liệu tổng theo số liệu hằng tháng của 6 địa bàn? Các bảng lũy kế đã báo cáo sẽ được thay bằng cộng dồn hằng tháng; số cũ vẫn giữ trong lịch sử.", "Đồng bộ")) break; const r = await slSyncFull("Đồng bộ toàn bộ số liệu tổng (bấm tay)"); render(); toast(r.cells ? `Đã đồng bộ ${r.mon} tháng, ${r.lk} bảng lũy kế${r.rep ? `, ${r.rep} kỳ báo cáo` : ""} (${r.cells} ô).` : "Số liệu tổng đã khớp, không có gì cần cập nhật."); break; }
     case "slgo": S.slEd = null; S.slTab = "thang"; S.slM = +b.dataset.m; S.slHi = { k: b.dataset.k, ms: (b.dataset.ms || b.dataset.m).split(",").map(Number) }; render(); break;
     case "slfix": { const d = S.solieu.find(x => x.id === b.dataset.id), k = b.dataset.k, v = +b.dataset.v; if (!d) break;
@@ -4013,6 +4181,31 @@ async function fixDiaBan(){
   }
   S.settings.diaBanFix = 1; await store.putSettings();
 }
+/* Số liệu theo thôn dò từ ảnh biểu viết tay (lưu chi tiết thôn; không ghi đè số địa bàn đã báo cáo) */
+const DATA_PATCHES = [{"id": "anh-2026-08-thon-v2", "nam": 2026, "thang": 8, "nguon": "Ảnh Biểu 01-DSX tháng 08/2026 theo thôn: Lộc Thượng, Lộc Hạ, Lộc An, Thạch Tân, Phú Thọ (dò, nhập ngày 28/10/2026)", "thon": {"Lộc Thượng": {"sinh_tong": 1, "sinh_nam": 0, "sinh_nu": 1, "sinh_con2": 1, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 0, "x_mt_hienco": 7, "x_sangloc": 0, "vong_moi": 0, "vong_thay": 0, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0, "x_tutt": 33, "x_bcs": 31, "x_chet": 1}, "Lộc Hạ": {"sinh_tong": 2, "sinh_nam": 1, "sinh_nu": 1, "sinh_con2": 0, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 2, "x_mt_hienco": 8, "x_sangloc": 2, "vong_moi": 4, "vong_thay": 1, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0, "x_tutt": 25, "x_bcs": 30, "x_chet": 1}, "Lộc An": {"sinh_tong": 1, "sinh_nam": 1, "sinh_nu": 0, "sinh_con2": 1, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 1, "x_mt_hienco": 4, "x_sangloc": 0, "vong_moi": 4, "vong_thay": 3, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0, "x_tutt": 21, "x_bcs": 28, "x_chet": 1}, "Thạch Tân": {"sinh_tong": 1, "sinh_nam": 1, "sinh_nu": 0, "sinh_con2": 1, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 2, "x_mt_hienco": 6, "x_sangloc": 1, "vong_moi": 4, "vong_thay": 3, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0, "x_tutt": 22, "x_bcs": 25, "x_chet": 1}, "Phú Thọ": {"sinh_tong": 0, "sinh_nam": 0, "sinh_nu": 0, "sinh_con2": 0, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 0, "x_mt_hienco": 3, "x_sangloc": 0, "vong_moi": 5, "vong_thay": 0, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0, "x_tutt": 21, "x_bcs": 21, "x_chet": 1}}, "them": {"Trong đó: chết là nữ": {"Lộc Thượng": 1}, "Ghi chú: BCS ô Lộc An khó đọc (28 hoặc 29; cột tổng ghi 136)": {"Lộc An": 28}}}];
+const DATA_PATCHES_OLD = [{"id": "anh-2026-08-thon", "nam": 2026, "thang": 8, "nguon": "Ảnh Biểu 01-DSX tháng 08/2026 theo thôn: Lộc Thượng, Lộc Hạ, Lộc An, Thạch Tân, Phú Thọ (dò, nhập ngày 28/10/2026)", "thon": {"Lộc Thượng": {"sinh_tong": 1, "sinh_nam": 0, "sinh_nu": 1, "sinh_con2": 1, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 7, "vong_moi": 0, "vong_thay": 0, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0}, "Lộc Hạ": {"sinh_tong": 2, "sinh_nam": 1, "sinh_nu": 1, "sinh_con2": 0, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 8, "vong_moi": 4, "vong_thay": 1, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0}, "Lộc An": {"sinh_tong": 1, "sinh_nam": 1, "sinh_nu": 0, "sinh_con2": 1, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 4, "vong_moi": 4, "vong_thay": 3, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0}, "Thạch Tân": {"sinh_tong": 1, "sinh_nam": 1, "sinh_nu": 0, "sinh_con2": 1, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 6, "vong_moi": 4, "vong_thay": 3, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0}, "Phú Thọ": {"sinh_tong": 0, "sinh_nam": 0, "sinh_nu": 0, "sinh_con2": 0, "sinh_con3": 0, "sinh_me20": 0, "mangthai_dang": 3, "vong_moi": 5, "vong_thay": 0, "vong_thoi": 0, "tsnam": 0, "tsnu": 0, "cay_moi": 0, "cay_thay": 0, "cay_thoi": 0}}, "them": {"Số phụ nữ mang thai trong tháng": {"Lộc Thượng": 0, "Lộc Hạ": 2, "Lộc An": 1, "Thạch Tân": 2, "Phú Thọ": 0}, "Mang thai được sàng lọc trước sinh": {"Lộc Thượng": 0, "Lộc Hạ": 2, "Lộc An": 0, "Thạch Tân": 1, "Phú Thọ": 0}, "Thuốc uống tránh thai": {"Lộc Thượng": 33, "Lộc Hạ": 25, "Lộc An": 21, "Thạch Tân": 22, "Phú Thọ": 21}, "Bao cao su (ô Lộc An khó đọc: 28 hoặc 29)": {"Lộc Thượng": 31, "Lộc Hạ": 30, "Lộc An": 28, "Thạch Tân": 25, "Phú Thọ": 21}, "Chết trong tháng": {"Lộc Thượng": 1, "Lộc Hạ": 1, "Lộc An": 1, "Thạch Tân": 1, "Phú Thọ": 1}, "Trong đó: chết là nữ": {"Lộc Thượng": 1}}}];
+async function applyDataPatches(){
+  if (!cap.db) return; const done = new Set(S.settings.patches || []); let n = 0;
+  for (const P of DATA_PATCHES) { if (done.has(P.id)) continue;
+    const d = S.solieu.find(x => x.id === `b01t-${P.nam}-${pad2(P.thang)}`); if (!d) continue;
+    d.perThon = d.perThon || {}; d.them = d.them || {};
+    for (const [t, v] of Object.entries(P.thon)) d.perThon[t] = { ...v, _db: matchThon(t, "").diaBan || "" };
+    for (const [lab, m] of Object.entries(P.them)) d.them[lab] = { ...(d.them[lab] || {}), ...m };
+    d.nguon = [...new Set([...(d.nguon || []), P.nguon])];
+    await store.put("solieu", d); done.add(P.id); n++; }
+  if (n) { S.settings.patches = [...done]; await store.putSettings(); }
+}
+/* Sửa lỗi đồng bộ 27/10: "đang mang thai" của lũy kế là số hiện có, không suy ra từ số hằng tháng → khôi phục số đã báo cáo */
+async function fixStockSync(){
+  if (!cap.db || S.settings.stockFix) return; let n = 0;
+  for (const lk of S.solieu.filter(x => x.loai === "b01_luyke")) {
+    const restore = [];
+    for (const h of lk.suaTay || []) if (/^Đồng bộ toàn bộ/.test(h.why || "")) for (const c of h.changes) if (STOCK_KEYS.has(c.k) && !c.db && lk.toanXa[c.k] === c.new && c.old != null) restore.push({ k:c.k, db:"", old:c.new, new:c.old });
+    if (restore.length) { for (const c of restore) lk.toanXa[c.k] = c.new; await slSaveDoc(lk, restore, "Khôi phục số phụ nữ đang mang thai đã báo cáo (số hiện có không cộng dồn từ hằng tháng)"); n++; }
+  }
+  S.settings.stockFix = 1; await store.putSettings();
+  if (n) setTimeout(() => toast(`Đã khôi phục số phụ nữ đang mang thai của ${n} bảng lũy kế về số đã báo cáo.`), 1500);
+}
 /* ===================== Khởi động ===================== */
 (async function init(){
   const [db, sample, downloads, usr] = await Promise.all([useCap("db"), useCap("sample"), useCap("downloads"), useCap("user")]);
@@ -4027,6 +4220,8 @@ async function fixDiaBan(){
   $("#st-ai").innerHTML = window.__STANDALONE && !cap.sample ? `<span class="dot off"></span>Chưa kết nối Claude (nhập khóa API ở Thông tin cơ quan)` : cap.sample ? `<span class="dot"></span>Trợ lý đọc tệp sẵn sàng${cap.images?"":" (không đọc ảnh)"}` : `<span class="dot off"></span>Trợ lý đọc tệp chưa sẵn sàng`;
   try { await store.loadAll(); await store.loadYear(S.pY); } catch(e){ toast("Không tải được dữ liệu đã lưu: " + (e && e.message || e.code || ""), true); }
   try { await fixDiaBan(); } catch(e){}
+  try { await fixStockSync(); } catch(e){ console.error(e); }
+  try { await applyDataPatches(); } catch(e){ console.error(e); }
   try { if (!S.settings.syncFull && cap.db) { const r = await slSyncFull("Đồng bộ toàn bộ số liệu tổng theo số liệu hằng tháng theo địa bàn"); S.settings.syncFull = 1; await store.putSettings(); if (r.cells) setTimeout(() => toast(`Đã đồng bộ số liệu tổng: ${r.mon} tháng, ${r.lk} bảng lũy kế${r.rep ? `, ${r.rep} kỳ báo cáo` : ""} (${r.cells} ô). Số cũ được giữ trong lịch sử.`), 900); } } catch(e){}
   try { const r = await slSyncAll(); if (r.nDoc) setTimeout(() => toast(`Đã cập nhật cột Toàn xã của ${r.nDoc} tháng theo số địa bàn đã sửa${r.nLk ? ` và ${r.nLk} bảng lũy kế liên quan` : ""}.`), 600); } catch(e){}
   S.view = "home"; bindTips();

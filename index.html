@@ -395,6 +395,19 @@ i.lg{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 
 i.lg.full{background:var(--ok)}i.lg.part{background:var(--warn)}i.lg.mis{background:var(--accent)}
 @media (max-width:1080px){.btmons{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.btmons{grid-template-columns:repeat(2,minmax(0,1fr))}}
+table.bt .bt-sub{font-weight:400;font-size:10px;color:var(--muted);text-transform:none}
+table.bt th.bt-paper,table.bt td.bt-paper{background:#fbf6ea;border-left:1px dashed #d9c79a}
+table.bt input.btpin{width:54px;border:1px dashed #cdb88a;border-radius:4px;padding:4px;text-align:right;background:#fffdf6;font:inherit}
+table.bt input.btpin.ok{border:1px solid var(--ok);background:color-mix(in srgb,var(--ok) 12%,#fff);color:var(--ok);font-weight:600}
+table.bt input.btpin.bad,table.bt input.btin.bad{border:1px solid var(--danger)!important;background:var(--danger-soft)!important;color:var(--danger);font-weight:700}
+.bt-rvbox.has-err{border-left:4px solid var(--danger)}
+.bt-rvbox.ok{border-left:4px solid var(--ok)}
+ul.rvl{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:2px}
+.rvi{all:unset;cursor:pointer;font-size:12.5px;padding:2px 6px;border-radius:4px;display:block}
+.rvi.e{color:var(--danger)}.rvi.e::before{content:"✕ ";font-weight:700}
+.rvi.i{color:var(--muted)}.rvi.i::before{content:"ⓘ "}
+.rvi:hover{background:var(--surface-2);text-decoration:underline}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) table.bt th.bt-paper,:root:not([data-theme="light"]) table.bt td.bt-paper{background:#2a2518}:root:not([data-theme="light"]) table.bt input.btpin{background:#221e14;color:inherit}}
 .ckl{display:flex;flex-direction:column}
 .cki{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
 .cki:first-child{border-top:0;padding-top:2px}
@@ -2707,37 +2720,14 @@ const MAU_THANG = [
   { stt:"16.", ten:"Số người chuyển đi trong tháng", k:"x_di" }, { stt:"17.", ten:"Số người chuyển đến trong tháng", k:"x_den" }];
 const MAU_KEYS = MAU_THANG.filter(r => r.k).map(r => r.k);
 const MAU_NAME = Object.fromEntries(MAU_THANG.filter(r => r.k).map(r => [r.k, r.ten.replace(/^- /, "")]));
-const BT = { y:null, m:null, data:null, dirty:false };
+const BT = { y:null, m:null, data:null, pt:{}, paper:true, dirty:false };
 const BT_ORDER = ["Lộc Thượng","Lộc Hạ","Lộc An","Thạch Tân","Phú Thọ","Tuy Lộc","Án Xá","Đại Phong","Thượng Phong","Thượng Giang","Phong Giang","Xuân Giang","Uẩn Áo","Quy Hậu","Đông Thành","Xuân Hồi","Xuân Thuỷ","Xuân Thượng","Xuân Hạ"].map(stripPre);
 function btThon(){ // theo thứ tự cột của mẫu biểu Lệ Thuỷ
   const ix = t => { const i = BT_ORDER.indexOf(stripPre(t)); return i < 0 ? 999 : i; };
   return diaBans().filter(d => d.ten).map(d => ({ db:d.ten, thon:[...d.thon].sort((a, b) => ix(a) - ix(b)) })).sort((a, b) => Math.min(...a.thon.map(ix)) - Math.min(...b.thon.map(ix)));
 }
-function btLoad(){
-  const y = BT.y, m = BT.m, d = S.solieu.find(x => x.id === `b01t-${y}-${pad2(m)}`);
-  BT.data = {}; for (const g of btThon()) for (const t of g.thon) { const src = d && d.perThon && (d.perThon[t] || Object.entries(d.perThon).find(([k]) => stripPre(k) === stripPre(t))?.[1]); BT.data[t] = {}; if (src) for (const k of MAU_KEYS) if (src[k] != null) BT.data[t][k] = src[k]; }
-  BT.dirty = false;
-}
 function btInit(){ if (BT.y) return; const now = new Date(); BT.y = now.getFullYear(); BT.m = now.getMonth() || 12; if (!now.getMonth()) BT.y--; btLoad(); }
 function btSum(k, list){ let any = false, s = 0; for (const t of list) { const v = BT.data[t] && BT.data[t][k]; if (v != null) { any = true; s += v; } } return any ? s : null; }
-function viewBT(){
-  btInit();
-  const G = btThon(), all = G.flatMap(g => g.thon), filled = all.filter(t => Object.keys(BT.data[t] || {}).length).length;
-  const d = S.solieu.find(x => x.id === `b01t-${BT.y}-${pad2(BT.m)}`);
-  const head1 = `<tr><th rowspan="2" class="bt-stt">STT</th><th rowspan="2" class="bt-name">Tên chỉ tiêu</th><th rowspan="2">Đơn vị tính</th><th rowspan="2" class="n bt-tx">Toàn xã</th>${G.map(g => `<th colspan="${g.thon.length}" class="bt-grp">${esc(g.db)}</th>`).join("")}</tr>`;
-  const head2 = `<tr>${G.map(g => g.thon.map((t, i) => `<th class="n${i === 0 ? " bt-first" : ""}">${esc(t)}</th>`).join("")).join("")}</tr>`;
-  const rows = MAU_THANG.map(r => r.head ? `<tr class="bt-h"><td></td><td>${esc(r.ten)}</td><td>Người</td><td class="bt-tx"></td>${G.map(g => g.thon.map((t, i) => `<td class="${i === 0 ? "bt-first" : ""}"></td>`).join("")).join("")}</tr>`
-    : `<tr><td class="bt-stt">${esc(r.stt || "")}</td><td class="bt-name">${esc(r.ten)}${r.k === "sinh_tong" ? ` <span class="chip auto" style="font-size:10px;padding:0 5px">nam + nữ</span>` : ""}</td><td class="muted small">Người</td><td class="n bt-tx" data-btx="${r.k}">${btSum(r.k, all) ?? ""}</td>
-      ${G.map(g => g.thon.map((t, i) => `<td class="${i === 0 ? "bt-first" : ""}"><input class="btin${r.k === "sinh_tong" ? " slro" : ""}" data-t="${esc(t)}" data-k="${r.k}" type="number" min="0" inputmode="numeric" value="${BT.data[t][r.k] ?? ""}"${r.k === "sinh_tong" ? ' readonly tabindex="-1"' : ""}></td>`).join("")).join("")}</tr>`).join("");
-  return `<div class="row between"><div><div class="eyebrow">Mẫu biểu tháng theo thôn · Biểu 01-DSX (Thông tư 01/2022/TT-BYT)</div><h1>Báo cáo thống kê chuyên ngành dân số tháng ${pad2(BT.m)}/${BT.y}</h1></div>
-      <div class="row"><label class="lbl" for="bt-m">Tháng</label><select class="inp" id="bt-m" style="width:auto">${Array.from({length:12}, (_, i) => `<option value="${i+1}" ${i+1 === BT.m ? "selected" : ""}>${pad2(i+1)}</option>`).join("")}</select>
-      <label class="lbl" for="bt-y">Năm</label><input class="inp" id="bt-y" type="number" value="${BT.y}" style="width:90px"></div></div>
-    ${btMonths()}
-    <div class="row between"><span class="small muted">Đã nhập ${filled}/${all.length} thôn${d && d.perThon ? " · đã có số liệu lưu cho tháng này" : ""}. Cột Toàn xã tự cộng; Tổng số trẻ sinh tự bằng nam + nữ. Nhấn Enter để xuống ô dưới.</span>
-      <div class="row" style="gap:6px"><label class="btn sm" for="bt-file">Nhập từ Excel, ảnh</label><input type="file" id="bt-file" accept=".xls,.xlsx,image/*" hidden><button class="btn sm" data-act="bt-blank">Tải biểu trống</button><button class="btn sm" data-act="bt-xlsx">Xuất Excel theo mẫu</button><button class="btn sm primary" data-act="bt-save">Lưu và cập nhật số liệu</button></div></div>
-    <div class="tblwrap bt-wrap"><table class="bt">${head1}${head2}<tbody>${rows}</tbody></table></div>
-    <p class="small muted" style="margin:0">Khi lưu: số các thôn được cộng theo địa bàn vào Biểu 01 tháng ${pad2(BT.m)}/${BT.y}; cột Toàn xã của tháng, các bảng lũy kế, Kỳ báo cáo, Theo địa bàn, Tổng quan tự cập nhật. Các chỉ tiêu 9–17 (tiêm, BCS, TUTT, chết, kết hôn, người cao tuổi, truyền thông, chuyển đi, chuyển đến) được lưu theo thôn để xuất biểu và tổng hợp.</p>`;
-}
 function btMonths(){
   const y = BT.y, all = btThon().flatMap(g => g.thon), now = new Date();
   const cards = Array.from({ length:12 }, (_, i) => {
@@ -2755,28 +2745,92 @@ function btMonths(){
       ${last ? `<span class="btm-d">Sửa gần nhất ${last}</span>` : ""}</button>`; }).join("");
   return `<div class="panel stack" style="padding:12px 14px"><div class="row between"><h3>Các tháng năm ${y}</h3><span class="small muted"><i class="lg full"></i>Đủ thôn <i class="lg part"></i>Còn thiếu thôn <i class="lg mis"></i>Chỉ có số địa bàn <i class="lg none"></i>Chưa nhập · Bấm một tháng để xem, sửa</span></div><div class="btmons">${cards}</div></div>`;
 }
+function btLoad(){
+  const y = BT.y, m = BT.m, d = S.solieu.find(x => x.id === `b01t-${y}-${pad2(m)}`);
+  BT.data = {}; for (const g of btThon()) for (const t of g.thon) { const src = d && d.perThon && (d.perThon[t] || Object.entries(d.perThon).find(([k]) => stripPre(k) === stripPre(t))?.[1]); BT.data[t] = {}; if (src) for (const k of MAU_KEYS) if (src[k] != null) BT.data[t][k] = src[k]; }
+  BT.pt = clone((d && d.tongGiay) || {}); BT.dirty = false;
+}
+const BT_RULES = [["sinh_con2+sinh_con3", "sinh_tong", "Con thứ 2 + con thứ 3 trở lên lớn hơn tổng số trẻ sinh"], ["sinh_me20", "sinh_tong", "Con của phụ nữ dưới 20 tuổi lớn hơn tổng số trẻ sinh"],
+  ["vong_thay", "vong_moi", "Số thay vòng lớn hơn số đặt vòng mới"], ["cay_thay", "cay_moi", "Số thay que cấy lớn hơn số cấy mới"], ["x_tuvan_kh", "x_kethon", "Số cặp được tư vấn lớn hơn số cặp kết hôn"],
+  ["mangthai_dang", "x_mt_hienco", "Mang thai mới trong tháng lớn hơn số mang thai hiện còn"], ["x_sangloc", "x_mt_hienco", "Số mang thai được sàng lọc lớn hơn số mang thai hiện còn"]];
+function btReview(){
+  const G = btThon(), all = G.flatMap(g => g.thon), err = [], info = [], bad = new Set(), pst = {};
+  const val = (o, expr) => { const ks = expr.split("+"); if (ks.every(k => o[k] == null)) return null; return ks.reduce((a, k) => a + (o[k] || 0), 0); };
+  for (const t of all) { const o = BT.data[t]; if (!Object.keys(o).length) continue;
+    for (const [a, b, msg] of BT_RULES) { const va = val(o, a), vb = o[b]; if (va != null && vb != null && va > vb) { err.push({ t, k: a.split("+")[0], msg:`${t}: ${msg} (${va} > ${vb})` }); a.split("+").forEach(k => bad.add(t + "|" + k)); } } }
+  if (BT.paper) {
+    for (const g of [...G, { db:"_tx", thon: all }]) { const p = BT.pt[g.db] || {};
+      for (const k of MAU_KEYS) { if (p[k] == null) continue; const s = btSum(k, g.thon) ?? 0, key = g.db + "|" + k; if (s === p[k]) pst[key] = "ok"; else { pst[key] = "bad";
+        const nm = g.db === "_tx" ? "Toàn xã" : g.db, miss = g.thon.filter(t => !Object.keys(BT.data[t]).length).length;
+        err.push({ pdb: g.db, k, msg:`${nm} · ${MAU_NAME[k]}: trên biểu ghi ${p[k]}, cộng các thôn ${s} (lệch ${s - p[k] > 0 ? "+" : ""}${s - p[k]})${miss ? ` – còn ${miss} thôn chưa nhập` : ""}` }); } } } }
+  const d = S.solieu.find(x => x.id === `b01t-${BT.y}-${pad2(BT.m)}`);
+  for (const g of G) { const done = g.thon.every(t => Object.keys(BT.data[t]).length); if (!done || !d || !d.perDb || !d.perDb[g.db]) continue;
+    const ch = B01_KEYS.filter(k => { const s = btSum(k, g.thon); return s != null && d.perDb[g.db][k] != null && s !== d.perDb[g.db][k]; });
+    if (ch.length) info.push({ msg:`${g.db}: khác số đang lưu ở ${ch.length} chỉ tiêu (${ch.slice(0, 3).map(k => `${B01_NAMES[k].replace(/^– /, "")} ${d.perDb[g.db][k]}→${btSum(k, g.thon)}`).join("; ")}${ch.length > 3 ? "…" : ""}); khi lưu sẽ thay bằng số các thôn` }); }
+  const missT = all.filter(t => !Object.keys(BT.data[t]).length);
+  if (missT.length && missT.length < all.length) info.push({ msg:`Còn ${missT.length} thôn chưa nhập: ${missT.join(", ")}` });
+  return { err, info, bad, pst };
+}
+function viewBT(){
+  btInit();
+  const G = btThon(), all = G.flatMap(g => g.thon), filled = all.filter(t => Object.keys(BT.data[t] || {}).length).length, P = !!BT.paper;
+  const d = S.solieu.find(x => x.id === `b01t-${BT.y}-${pad2(BT.m)}`);
+  const pin = (db, k) => `<input class="btpin" data-pdb="${esc(db)}" data-k="${k}" type="number" min="0" inputmode="numeric" value="${(BT.pt[db] || {})[k] ?? ""}" title="Số tổng ghi trên biểu giấy">`;
+  const head1 = `<tr><th rowspan="2" class="bt-stt">STT</th><th rowspan="2" class="bt-name">Tên chỉ tiêu</th><th rowspan="2">Đơn vị tính</th><th rowspan="2" class="n bt-tx">Toàn xã<br><span class="bt-sub">cộng thôn</span></th>${P ? `<th rowspan="2" class="n bt-paper">Toàn xã<br><span class="bt-sub">trên biểu</span></th>` : ""}${G.map(g => `<th colspan="${g.thon.length + (P ? 1 : 0)}" class="bt-grp">${esc(g.db)}</th>`).join("")}</tr>`;
+  const head2 = `<tr>${G.map(g => g.thon.map((t, i) => `<th class="n${i === 0 ? " bt-first" : ""}">${esc(t)}</th>`).join("") + (P ? `<th class="n bt-paper">Tổng<br><span class="bt-sub">trên biểu</span></th>` : "")).join("")}</tr>`;
+  const rows = MAU_THANG.map(r => r.head ? `<tr class="bt-h"><td></td><td>${esc(r.ten)}</td><td>Người</td><td class="bt-tx"></td>${P ? `<td class="bt-paper"></td>` : ""}${G.map(g => g.thon.map((t, i) => `<td class="${i === 0 ? "bt-first" : ""}"></td>`).join("") + (P ? `<td class="bt-paper"></td>` : "")).join("")}</tr>`
+    : `<tr><td class="bt-stt">${esc(r.stt || "")}</td><td class="bt-name">${esc(r.ten)}${r.k === "sinh_tong" ? ` <span class="chip auto" style="font-size:10px;padding:0 5px">nam + nữ</span>` : ""}</td><td class="muted small">Người</td><td class="n bt-tx" data-btx="${r.k}">${btSum(r.k, all) ?? ""}</td>${P ? `<td class="bt-paper">${pin("_tx", r.k)}</td>` : ""}
+      ${G.map(g => g.thon.map((t, i) => `<td class="${i === 0 ? "bt-first" : ""}"><input class="btin${r.k === "sinh_tong" ? " slro" : ""}" data-t="${esc(t)}" data-k="${r.k}" type="number" min="0" inputmode="numeric" value="${BT.data[t][r.k] ?? ""}"${r.k === "sinh_tong" ? ' readonly tabindex="-1"' : ""}></td>`).join("") + (P ? `<td class="bt-paper">${pin(g.db, r.k)}</td>` : "")).join("")}</tr>`).join("");
+  return `<div class="row between"><div><div class="eyebrow">Mẫu biểu tháng theo thôn · Biểu 01-DSX (Thông tư 01/2022/TT-BYT)</div><h1>Báo cáo thống kê chuyên ngành dân số tháng ${pad2(BT.m)}/${BT.y}</h1></div>
+      <div class="row"><label class="lbl" for="bt-m">Tháng</label><select class="inp" id="bt-m" style="width:auto">${Array.from({length:12}, (_, i) => `<option value="${i+1}" ${i+1 === BT.m ? "selected" : ""}>${pad2(i+1)}</option>`).join("")}</select>
+      <label class="lbl" for="bt-y">Năm</label><input class="inp" id="bt-y" type="number" value="${BT.y}" style="width:90px"></div></div>
+    ${btMonths()}
+    <div class="row between"><span class="small muted">Đã nhập ${filled}/${all.length} thôn${d && d.perThon ? " · đã có số liệu lưu cho tháng này" : ""}. Nhấn Enter để xuống ô dưới.</span>
+      <div class="row" style="gap:6px"><button class="btn sm ${P ? "primary" : ""}" data-act="bt-paper" title="Thêm cột nhập số tổng ghi trên biểu giấy để đối chiếu với tổng cộng các thôn">${P ? "✓ " : ""}Đối chiếu tổng trên biểu</button><label class="btn sm" for="bt-file">Nhập từ Excel, ảnh</label><input type="file" id="bt-file" accept=".xls,.xlsx,image/*" hidden><button class="btn sm" data-act="bt-blank">Tải biểu trống</button><button class="btn sm" data-act="bt-xlsx">Xuất Excel theo mẫu</button><button class="btn sm primary" data-act="bt-save">Lưu và cập nhật số liệu</button></div></div>
+    <div id="bt-rv"></div>
+    <div class="tblwrap bt-wrap"><table class="bt">${head1}${head2}<tbody>${rows}</tbody></table></div>
+    <p class="small muted" style="margin:0">${P ? "Cột “Tổng trên biểu”: gõ số tổng ghi trên biểu giấy của từng địa bàn (và Toàn xã); ô xanh là khớp với cộng các thôn, ô đỏ là lệch. " : ""}Khi lưu: số các thôn được cộng theo địa bàn vào Biểu 01 tháng ${pad2(BT.m)}/${BT.y}; Toàn xã, lũy kế, Kỳ báo cáo, Theo địa bàn, Tổng quan tự cập nhật. Các chỉ tiêu 9–17 được lưu theo thôn để xuất biểu.</p>`;
+}
+function btReviewRender(){
+  const w = $(".bt-wrap"), box = $("#bt-rv"); if (!w || !box) return;
+  const R = btReview();
+  w.querySelectorAll(".btin").forEach(el => el.classList.toggle("bad", R.bad.has(el.dataset.t + "|" + el.dataset.k)));
+  w.querySelectorAll(".btpin").forEach(el => { const s = R.pst[el.dataset.pdb + "|" + el.dataset.k]; el.classList.toggle("ok", s === "ok"); el.classList.toggle("bad", s === "bad"); const g = el.dataset.pdb === "_tx" ? btThon().flatMap(x => x.thon) : (btThon().find(x => x.db === el.dataset.pdb) || { thon:[] }).thon; el.title = `Số tổng ghi trên biểu giấy. Cộng các thôn: ${btSum(el.dataset.k, g) ?? "trống"}`; });
+  const anyData = btThon().flatMap(g => g.thon).some(t => Object.keys(BT.data[t]).length) || Object.keys(BT.pt).length;
+  if (!anyData) { box.innerHTML = ""; return; }
+  const item = (x, cls) => `<li><button class="rvi ${cls}" ${x.t ? `data-ft="${esc(x.t)}"` : ""} ${x.pdb ? `data-fp="${esc(x.pdb)}"` : ""} ${x.k ? `data-fk="${x.k}"` : ""}>${esc(x.msg)}</button></li>`;
+  box.innerHTML = `<div class="panel stack bt-rvbox ${R.err.length ? "has-err" : "ok"}" style="padding:10px 14px"><div class="row between"><b>${R.err.length ? `Rà soát: ${R.err.length} chỗ cần kiểm tra` : "Rà soát: không có chỗ lệch"}</b><span class="small muted">${BT.paper ? "Đối chiếu tổng trên biểu, " : ""}kiểm tra logic từng thôn${R.info.length ? " · " + R.info.length + " lưu ý" : ""}. Bấm vào một dòng để đến ô đó.</span></div>
+    ${R.err.length ? `<ul class="rvl">${R.err.slice(0, 12).map(x => item(x, "e")).join("")}${R.err.length > 12 ? `<li class="small muted">… và ${R.err.length - 12} chỗ khác (ô viền đỏ)</li>` : ""}</ul>` : ""}
+    ${R.info.length ? `<ul class="rvl">${R.info.map(x => item(x, "i")).join("")}</ul>` : ""}</div>`;
+  box.querySelectorAll(".rvi").forEach(b => b.onclick = () => { const k = b.dataset.fk; const el = b.dataset.ft ? w.querySelector(`.btin[data-t="${CSS.escape(b.dataset.ft)}"][data-k="${k}"]`) : b.dataset.fp ? w.querySelector(`.btpin[data-pdb="${CSS.escape(b.dataset.fp)}"][data-k="${k}"]`) : null; if (el) { el.scrollIntoView({ block:"center", inline:"center", behavior:"smooth" }); setTimeout(() => { el.focus(); el.select(); }, 250); } });
+}
 function afterBT(){
   const w = $(".bt-wrap"); if (!w) return;
   const calc = t => { const a = BT.data[t].sinh_nam, b = BT.data[t].sinh_nu; if (a != null || b != null) { BT.data[t].sinh_tong = (a || 0) + (b || 0); const el = w.querySelector(`.btin[data-t="${CSS.escape(t)}"][data-k="sinh_tong"]`); if (el) el.value = BT.data[t].sinh_tong; } };
-  const all = btThon().flatMap(g => g.thon);
-  w.addEventListener("input", e => { const el = e.target; if (!el.classList.contains("btin")) return; const t = el.dataset.t, k = el.dataset.k; const v = el.value.trim() === "" ? null : Math.max(0, Math.round(+el.value)); if (v == null) delete BT.data[t][k]; else BT.data[t][k] = v; if (k === "sinh_nam" || k === "sinh_nu") calc(t); BT.dirty = true;
-    for (const kk of [k, "sinh_tong"]) { const c = w.querySelector(`[data-btx="${kk}"]`); if (c) c.textContent = btSum(kk, all) ?? ""; } });
-  w.addEventListener("keydown", e => { const el = e.target; if (e.key !== "Enter" || !el.classList.contains("btin")) return; e.preventDefault(); const ins = [...w.querySelectorAll(`.btin[data-t="${CSS.escape(el.dataset.t)}"]:not([readonly])`)]; const i = ins.indexOf(el); if (ins[i+1]) { ins[i+1].focus(); ins[i+1].select(); } });
+  const all = btThon().flatMap(g => g.thon), rvSoon = debounce(btReviewRender, 150);
+  w.addEventListener("input", e => { const el = e.target;
+    if (el.classList.contains("btpin")) { const db = el.dataset.pdb, k = el.dataset.k, v = el.value.trim() === "" ? null : Math.max(0, Math.round(+el.value)); BT.pt[db] = BT.pt[db] || {}; if (v == null) delete BT.pt[db][k]; else BT.pt[db][k] = v; BT.dirty = true; rvSoon(); return; }
+    if (!el.classList.contains("btin")) return; const t = el.dataset.t, k = el.dataset.k; const v = el.value.trim() === "" ? null : Math.max(0, Math.round(+el.value)); if (v == null) delete BT.data[t][k]; else BT.data[t][k] = v; if (k === "sinh_nam" || k === "sinh_nu") calc(t); BT.dirty = true;
+    for (const kk of [k, "sinh_tong"]) { const c = w.querySelector(`[data-btx="${kk}"]`); if (c) c.textContent = btSum(kk, all) ?? ""; } rvSoon(); });
+  w.addEventListener("keydown", e => { const el = e.target; if (e.key !== "Enter" || !(el.classList.contains("btin") || el.classList.contains("btpin"))) return; e.preventDefault(); const sel = el.classList.contains("btin") ? `.btin[data-t="${CSS.escape(el.dataset.t)}"]:not([readonly])` : `.btpin[data-pdb="${CSS.escape(el.dataset.pdb)}"]`; const ins = [...w.querySelectorAll(sel)]; const i = ins.indexOf(el); if (ins[i+1]) { ins[i+1].focus(); ins[i+1].select(); } });
   const sw = async () => { if (BT.dirty && !await confirmBox("Số vừa nhập chưa lưu. Chuyển tháng sẽ bỏ các số này?", "Bỏ và chuyển")) { $("#bt-m").value = BT.m; $("#bt-y").value = BT.y; return; } BT.m = +$("#bt-m").value; BT.y = +$("#bt-y").value || BT.y; btLoad(); render(); };
   $("#bt-m").onchange = sw; $("#bt-y").onchange = sw;
   $("#bt-file").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; if (isImg(f)) imgStart(f); else btImportXlsx(f); };
+  btReviewRender();
 }
+
 async function btSave(){
   const G = btThon(), y = BT.y, mth = BT.m, id = `b01t-${y}-${pad2(mth)}`;
   const withData = G.filter(g => g.thon.some(t => Object.keys(BT.data[t]).length));
   if (!withData.length) { toast("Chưa nhập số liệu thôn nào.", true); return; }
-  const part = withData.filter(g => g.thon.some(t => !Object.keys(BT.data[t]).length));
+  const part = withData.filter(g => g.thon.some(t => !Object.keys(BT.data[t]).length)), RV = btReview();
   let d = S.solieu.find(x => x.id === id);
   const preview = withData.map(g => { const cur = d && d.perDb && d.perDb[g.db] || {}; const ch = B01_KEYS.map(k => [k, btSum(k, g.thon)]).filter(([k, v]) => v != null && (cur[k] ?? null) !== v).map(([k, v]) => `${B01_NAMES[k].replace(/^– /, "")} ${cur[k] ?? "trống"}→${v}`); return `${g.db}: ${ch.length ? ch.slice(0, 6).join(", ") + (ch.length > 6 ? "…" : "") : "không đổi"}`; }).join(" | ");
-  if (!await confirmBox(`Cập nhật Biểu 01 tháng ${pad2(mth)}/${y} theo số các thôn? ${preview}${part.length ? ` · Lưu ý: ${part.map(g => g.db).join(", ")} còn thôn chưa nhập, số địa bàn sẽ chỉ cộng các thôn đã nhập.` : ""}`, "Lưu và cập nhật")) return;
+  if (!await confirmBox(`Cập nhật Biểu 01 tháng ${pad2(mth)}/${y} theo số các thôn? ${preview}${part.length ? ` · Lưu ý: ${part.map(g => g.db).join(", ")} còn thôn chưa nhập, số địa bàn sẽ chỉ cộng các thôn đã nhập.` : ""}${RV.err.length ? ` · CẢNH BÁO: còn ${RV.err.length} chỗ lệch khi rà soát (ví dụ: ${RV.err[0].msg}).` : ""}`, RV.err.length ? "Vẫn lưu" : "Lưu và cập nhật")) return;
   if (!d) { d = { id, loai:"b01_thang", nam:y, from:mth, to:mth, toanXa:{}, perDb:{}, donVi:S.settings.donViBieu || "", nguon:[], importedAt:Date.now() }; S.solieu.push(d); }
   d.perDb = d.perDb || {}; d.perThon = d.perThon || {};
   for (const g of G) { d.perDb[g.db] = d.perDb[g.db] || {}; for (const t of g.thon) if (Object.keys(BT.data[t]).length) d.perThon[t] = { ...BT.data[t], _db: g.db }; }
+  d.tongGiay = clone(BT.pt || {});
   const changes = [], keys = new Set();
   for (const g of withData) { const tgt = d.perDb[g.db]; for (const k of B01_KEYS) { const v = btSum(k, g.thon); if (v == null) continue; const ov = tgt[k] ?? null; if (ov === v) continue; changes.push({ k, db:g.db, old:ov, new:v }); tgt[k] = v; keys.add(k); } }
   changes.push(...slSyncDoc(d, keys));
@@ -4181,6 +4235,7 @@ document.addEventListener("click", async e => {
     case "sledsave": slEdSave(); break;
     case "phmode": if (S.phMode !== b.dataset.v && BT.dirty && !await confirmBox("Số trong biểu tháng chưa lưu. Chuyển trang sẽ bỏ các số này?", "Bỏ và chuyển")) break; if (b.dataset.v === "thon") BT.y = null; S.phMode = b.dataset.v; render(); break;
     case "bt-save": btSave(); break;
+    case "bt-paper": BT.paper = !BT.paper; render(); break;
     case "bt-open": { const m = +b.dataset.m; if (m === BT.m) break; if (BT.dirty && !await confirmBox("Số vừa nhập chưa lưu. Chuyển tháng sẽ bỏ các số này?", "Bỏ và chuyển")) break; BT.m = m; btLoad(); render(); document.querySelector(".bt-wrap")?.scrollIntoView({ block:"start", behavior:"smooth" }); break; }
     case "bt-xlsx": { const o = b.textContent; b.disabled = true; b.textContent = "Đang tạo…"; try { await btExportXlsx(false); } catch(e){ toast("Không tạo được tệp: " + (e.message || e), true); } b.disabled = false; b.textContent = o; break; }
     case "bt-blank": { const o = b.textContent; b.disabled = true; b.textContent = "Đang tạo…"; try { await btExportXlsx(true); } catch(e){ toast("Không tạo được tệp: " + (e.message || e), true); } b.disabled = false; b.textContent = o; break; }

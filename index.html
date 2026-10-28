@@ -1248,7 +1248,7 @@ function ttStats(){
   const d = lks[0]; if (!d) return null; const t = { ...d.toanXa }, out = [];
   const lastMon = S.solieu.find(x => x.loai === "b01_thang" && x.nam === d.nam && x.from === d.to); if (lastMon) for (const k of STOCK_KEYS) if (lastMon.toanXa[k] != null) t[k] = lastMon.toanXa[k]; // số hiện có lấy theo tháng cuối kỳ
   const add = (k, l) => { if (t[k]) out.push(`${l}: ${t[k]}`); };
-  add("sinh_tong", "Tổng số trẻ sinh"); add("sinh_nam", "Trẻ nam"); add("sinh_nu", "Trẻ nữ"); add("sinh_con3", "Sinh con thứ 3 trở lên"); add("sinh_me20", "Con của phụ nữ dưới 20 tuổi"); add("mangthai_dang", `Phụ nữ đang mang thai (tháng ${pad2(d.to)})`); add("vong_moi", "Đặt vòng mới"); add("cay_moi", "Cấy thuốc tránh thai mới");
+  add("sinh_tong", "Tổng số trẻ sinh"); add("sinh_nam", "Trẻ nam"); add("sinh_nu", "Trẻ nữ"); add("sinh_con2", "Sinh con thứ 2"); add("sinh_con3", "Sinh con thứ 3 trở lên"); add("sinh_me20", "Con của phụ nữ dưới 20 tuổi"); add("mangthai_dang", `Phụ nữ đang mang thai (tháng ${pad2(d.to)})`); add("vong_moi", "Đặt vòng mới"); add("cay_moi", "Cấy thuốc tránh thai mới");
   let tsgt = null; if (t.sinh_nam && t.sinh_nu) tsgt = Math.round(t.sinh_nam / t.sinh_nu * 100);
   return { ky:`tháng 01–${pad2(d.to)}/${d.nam}`, lines: out, tsgt, t };
 }
@@ -1753,7 +1753,7 @@ function viewPhieu(){
           <p class="small muted" style="margin:0">Số liệu phiếu được tự động đưa vào Biểu 01, 02, 03-DSX ở mục Kỳ báo cáo.</p></div>
       </div></div>`;
 }
-const SUMCOLS = [["sinh_tong","Sinh"],["sinh_nam","Nam"],["sinh_nu","Nữ"],["sinh_con3","Con thứ 3+"],["sinh_me20","Mẹ <20t"],["chet","Chết"],["den","Đến"],["di","Đi"],["kethon_cap","Cặp KH"],["mangthai","Mang thai mới"],["mangthai_dang","Đang mang thai (T)"],["say","Sảy"],["pha","Phá"],["vong_moi","Vòng mới"],["cay_moi","Cấy mới"],["tsnu","TS nữ"],["tsnam","TS nam"],["tiem_moi","Tiêm"],["uong_moi","Uống"],["bcs_moi","BCS"],["vong_thoi","Thôi vòng"],["cay_thoi","Thôi cấy"]];
+const SUMCOLS = [["sinh_tong","Sinh"],["sinh_nam","Nam"],["sinh_nu","Nữ"],["sinh_con2","Con thứ 2"],["sinh_con3","Con thứ 3+"],["sinh_me20","Mẹ <20t"],["chet","Chết"],["den","Đến"],["di","Đi"],["kethon_cap","Cặp KH"],["mangthai","Mang thai mới"],["mangthai_dang","Đang mang thai (T)"],["say","Sảy"],["pha","Phá"],["vong_moi","Vòng mới"],["cay_moi","Cấy mới"],["tsnu","TS nữ"],["tsnam","TS nam"],["tiem_moi","Tiêm"],["uong_moi","Uống"],["bcs_moi","BCS"],["vong_thoi","Thôi vòng"],["cay_thoi","Thôi cấy"]];
 function phSummary(list, m, warn){
   const groups = {};
   for (const p of list) { const db = dbOf(p), t = p.thon || "(chưa rõ thôn)"; groups[db] = groups[db] || {}; (groups[db][t] = groups[db][t] || []).push(p); }
@@ -2238,7 +2238,7 @@ async function exportDiaBanDocx(){
     const missing = M.comp.filter(c => c.exp && c.got < c.exp);
     if (missing.length) children.push(P(`Ghi chú: chưa đủ phiếu ở ${missing.map(c => `${c.db} (${c.got}/${c.exp})`).join("; ")}.`, { italic:true, size:12, align:AlignmentType.LEFT, before:120 }));
     if (S.dv.thon && M.thonRows.length) {
-      const cols = SUMCOLS.slice(0, land ? 14 : 9), wDb = 1300, wTh = 1700, wc = Math.floor((LW - wDb - wTh) / cols.length);
+      const cols = SUMCOLS.slice(0, land ? 15 : 10), wDb = 1300, wTh = 1700, wc = Math.floor((LW - wDb - wTh) / cols.length);
       const w2 = [wDb, wTh, ...cols.map(() => wc)];
       const tr2 = [ new TableRow({ tableHeader:true, children:[ tc("Địa bàn", wDb, {bold:true, size:10, fill:"E8EEF0"}), tc("Thôn", wTh, {bold:true, size:10, fill:"E8EEF0"}), ...cols.map(([,l]) => tc(l, wc, {bold:true, size:10, fill:"E8EEF0"})) ] }) ];
       for (const db of M.dbs) { const rs = M.thonRows.filter(x => x.db === db); if (!rs.length) continue;
@@ -2738,7 +2738,7 @@ function viewHome(){
     <div class="row"><button class="btn" data-act="nav" data-v="phieu">Nhập phiếu CTV</button><button class="btn" data-act="nav" data-v="diaban">Xuất theo địa bàn</button><button class="btn primary" data-act="home-newrep">Tạo kỳ báo cáo</button></div></div>`;
   if (!c) return head + `<div class="panel empty"><b>Chưa có số liệu năm ${y}</b><span>Nhập Biểu 01-DSX đã báo cáo ở mục Số liệu đã báo cáo, hoặc tải phiếu thu tin của cộng tác viên.</span><div class="row" style="justify-content:center">${window.__STANDALONE ? `<button class="btn primary" data-act="sa-seed">Nạp số liệu năm 2026</button>` : ""}<button class="btn ${window.__STANDALONE ? "" : "primary"}" data-act="nav" data-v="solieu">Nhập số liệu đã báo cáo</button><button class="btn" data-act="nav" data-v="phieu">Tải phiếu CTV</button></div></div>`;
   const kyTxt = D.lastM === 1 ? `tháng 01/${y}` : `tháng 01–${pad2(D.lastM)}/${y}`;
-  const srb = c.sinh_nu ? fmtNum(c.sinh_nam / c.sinh_nu * 100, 1) : "—", p3 = c.sinh_tong ? fmtNum(c.sinh_con3 / c.sinh_tong * 100, 1) : "—";
+  const srb = c.sinh_nu ? fmtNum(c.sinh_nam / c.sinh_nu * 100, 1) : "—", p3 = c.sinh_tong ? fmtNum(c.sinh_con3 / c.sinh_tong * 100, 1) : "—", p2 = c.sinh_tong ? fmtNum(c.sinh_con2 / c.sinh_tong * 100, 1) : "—";
   const vp = D.ctVong ? Math.min(100, c.vong_moi / D.ctVong * 100) : null;
   // việc cần làm
   const pm = S.pM, py = S.pY, list = phieuIn(py, pm, pm), tk = (db, t) => noDia(db) + "|" + noDia(t);
@@ -2751,11 +2751,11 @@ function viewHome(){
   if (checks.length) todo.push({ c:"w", t:`<b>${checks.length} kỳ có số liệu lệch giữa lũy kế và hằng tháng</b><div class="small muted">Kiểm tra trước khi lập báo cáo kỳ tiếp theo.</div>`, a:`<button class="btn sm" data-act="home-check">Đối chiếu</button>` });
   if (!s.nguoiKy || !s.coQuan) todo.push({ c:"w", t:`<b>Chưa đủ thông tin người ký</b>`, a:`<button class="btn sm" data-act="nav" data-v="settings">Bổ sung</button>` });
   todo.push(lastRep ? { c:"i", t:`<b>Kỳ báo cáo gần nhất</b><div class="small muted">${esc(lastRep.title)}</div>`, a:`<button class="btn sm" data-act="openrep" data-id="${lastRep.id}">Mở</button>` } : { c:"i", t:`<b>Chưa tạo kỳ báo cáo nào</b><div class="small muted">Biểu 01, 02, 03-DSX được điền tự động từ số liệu đã có.</div>`, a:`<button class="btn sm" data-act="home-newrep">Tạo</button>` });
-  const dbRows = Object.entries(D.perDb).filter(([db]) => db !== UNK_DB).map(([db, m]) => ({ l: db, v: m.sinh_tong || 0, tip: `${db}: ${m.sinh_tong || 0} trẻ (nam ${m.sinh_nam || 0}, nữ ${m.sinh_nu || 0}; con thứ 3+ ${m.sinh_con3 || 0})` })).sort((a,b) => b.v - a.v);
+  const dbRows = Object.entries(D.perDb).filter(([db]) => db !== UNK_DB).map(([db, m]) => ({ l: db, v: m.sinh_tong || 0, tip: `${db}: ${m.sinh_tong || 0} trẻ (nam ${m.sinh_nam || 0}, nữ ${m.sinh_nu || 0}; con thứ 2: ${m.sinh_con2 || 0}; con thứ 3+ ${m.sinh_con3 || 0})` })).sort((a,b) => b.v - a.v);
   return head + `
     <div class="kpis">
       <div class="kpi"><span class="k">Tổng số trẻ sinh · ${kyTxt}</span><span class="v">${fmtNum(c.sinh_tong)}</span><span class="s">Nam <b>${fmtNum(c.sinh_nam)}</b> · Nữ <b>${fmtNum(c.sinh_nu)}</b> · ${srb} nam/100 nữ</span></div>
-      <div class="kpi"><span class="k">Sinh con thứ 3 trở lên</span><span class="v">${fmtNum(c.sinh_con3)}</span><span class="s"><b>${p3}%</b> tổng số trẻ sinh</span></div>
+      <div class="kpi"><span class="k">Sinh con thứ 2 · con thứ 3 trở lên</span><span class="v">${fmtNum(c.sinh_con2)} <span style="font-size:.6em;color:var(--muted);font-weight:600">· ${fmtNum(c.sinh_con3)}</span></span><span class="s">Con thứ 2: <b>${p2}%</b> · Con thứ 3+: <b>${p3}%</b> tổng số trẻ sinh</span></div>
       <div class="kpi"><span class="k">Phụ nữ đang mang thai</span><span class="v">${fmtNum(c.mangthai_dang)}</span><span class="s">Tính đến cuối tháng ${pad2(D.lastM)}/${y}</span></div>
       <div class="kpi"><span class="k">Đặt vòng tránh thai mới</span><span class="v">${fmtNum(c.vong_moi)}</span>${vp != null ? `<div class="pbar" title="${fmtNum(vp,1)}% chỉ tiêu"><i style="width:${vp.toFixed(1)}%"></i></div><span class="s">Đạt <b>${fmtNum(vp, 1)}%</b> chỉ tiêu năm (${fmtNum(D.ctVong)})</span>` : `<span class="s">Chưa có chỉ tiêu giao</span>`}</div>
     </div>
@@ -3091,7 +3091,7 @@ function tabText(rep){
         <div id="tstatus" class="status"></div>
         <button class="btn sm" data-act="undotext" id="btn-undo" ${rep.prevText!=null?"":"hidden"} style="align-self:flex-start">Hoàn tác lần cập nhật gần nhất</button>
       </div>
-      <div class="row between"><span class="lbl">Nội dung báo cáo</span><div class="row"><button class="btn sm" data-act="insph">Chèn số liệu</button><button class="btn sm primary" data-act="draft" id="btn-draft" ${cap.sample?"":"disabled title='Trợ lý chưa sẵn sàng ở chế độ xem này'"}>Soạn bằng Claude</button><button class="btn sm" data-act="stopdraft" id="btn-stop" hidden>Dừng</button></div></div>
+      <div class="row between"><span class="lbl">Nội dung báo cáo</span><div class="row"><button class="btn sm" data-act="insph">Chèn số liệu</button><button class="btn sm" data-act="draftlib" title="Soạn sẵn nội dung theo số liệu của biểu, không cần Claude">Soạn theo mẫu</button><button class="btn sm primary" data-act="draft" id="btn-draft" ${cap.sample?"":"disabled title='Trợ lý chưa sẵn sàng ở chế độ xem này'"}>Soạn bằng Claude</button><button class="btn sm" data-act="stopdraft" id="btn-stop" hidden>Dừng</button></div></div>
       <textarea class="inp" id="t-body" rows="22" spellcheck="false">${esc(rep.text||"")}</textarea>
       <p class="small muted" style="margin:0">Mỗi dòng là một đoạn. Dòng bắt đầu bằng "I.", "II." hoặc "1." được in đậm. <code>{r1.c1}</code> là số liệu lấy thẳng từ biểu (hàng r1, cột c1), tự cập nhật khi số liệu đổi. Có sẵn <code>{ky}</code>, <code>{nam}</code>, <code>{coquan}</code>.</p>
       ${(rep.notes||[]).length ? `<div class="panel stack"><h3>Tóm tắt từ các tệp (${rep.notes.length})</h3>${rep.notes.map(n => `<div class="job"><div class="row between"><span class="nm">${esc(n.name)}</span><button class="btn sm ghost danger" data-act="delnote" data-id="${n.id}">Bỏ</button></div><div class="small">${esc(n.text)}</div></div>`).join("")}<p class="small muted" style="margin:0">Claude dùng các tóm tắt này khi soạn phần đánh giá.</p></div>` : ""}
@@ -3102,6 +3102,7 @@ function resolveText(text, rep, V){
   const s = S.settings;
   return String(text||"")
     .replace(/\{ky\}/gi, rep.period.label).replace(/\{nam\}/gi, rep.period.year).replace(/\{coquan\}/gi, s.donViBieu || s.coQuan || "…")
+    .replace(/\{%(r\d+)\/(r\d+)\}/gi, (m, a, b) => { const ac = autoColId(rep.tpl), va = V[a.toLowerCase() + "|" + ac], vb = V[b.toLowerCase() + "|" + ac]; return va == null || !vb ? "…" : fmtNum(va / vb * 100, 1); })
     .replace(/\{(r\d+)\.(c\d+)\}/gi, (m, ri, ci) => {
       const r = rep.tpl.rows.find(x => x.id === ri.toLowerCase()), c = rep.tpl.cols.find(x => x.id === ci.toLowerCase());
       if (!r || !c) return "…";
@@ -3217,6 +3218,40 @@ function dataAsText(rep){
   const {V} = compute(rep.tpl, rep);
   return rep.tpl.rows.filter(r => !r.head).map(r => `${r.id} ${r.stt?r.stt+" ":""}${r.name} (${r.unit||""}): ` + rep.tpl.cols.map(c => `${c.name} [${c.id}] = ${V[r.id+"|"+c.id]==null?"chưa có":fmtNum(V[r.id+"|"+c.id], cellDec(r,c,!isInputCell(r,c)))}`).join("; ")).join("\n");
 }
+
+/* Soạn nội dung báo cáo theo số liệu của biểu (không cần Claude); số liệu dùng mã {r.c} nên tự cập nhật */
+function textFromData(rep){
+  const tpl = rep.tpl, ac = autoColId(tpl), {V} = compute(tpl, rep), R = k => tpl.rows.find(r => r.auto === k), has = k => { const r = R(k); return r && V[r.id + "|" + ac] != null; };
+  const v = k => `{${R(k).id}.${ac}}`, pc = (a, b) => `{%${R(a).id}/${R(b).id}}`, L = [];
+  L.push(`Căn cứ chức năng, nhiệm vụ được giao và số liệu thu thập từ phiếu thu tin của cộng tác viên dân số các thôn, {coquan} báo cáo kết quả công tác dân số ${rep.scope ? "địa bàn " + rep.scope + " " : ""}{ky} như sau:`);
+  L.push("I. KẾT QUẢ THỰC HIỆN"); L.push("1. Tình hình biến động dân số");
+  if (has("sinh_tong")) L.push(`- Tổng số trẻ sinh ra: ${v("sinh_tong")} trẻ` + (has("sinh_nam") && has("sinh_nu") ? `, trong đó trẻ nam ${v("sinh_nam")} trẻ, trẻ nữ ${v("sinh_nu")} trẻ; tỷ số giới tính khi sinh là ${pc("sinh_nam", "sinh_nu")} trẻ nam/100 trẻ nữ.` : "."));
+  if (has("sinh_con2") && has("sinh_tong")) L.push(`- Số trẻ sinh ra là con thứ 2: ${v("sinh_con2")} trẻ, chiếm ${pc("sinh_con2", "sinh_tong")}% tổng số trẻ sinh.`);
+  if (has("sinh_con3") && has("sinh_tong")) L.push(`- Số trẻ sinh ra là con thứ 3 trở lên: ${v("sinh_con3")} trẻ, chiếm ${pc("sinh_con3", "sinh_tong")}% tổng số trẻ sinh.`);
+  if (has("sinh_me20")) L.push(`- Số trẻ sinh ra của phụ nữ dưới 20 tuổi: ${v("sinh_me20")} trẻ.`);
+  if (has("chet")) L.push(`- Số người chết: ${v("chet")} người.`);
+  if (has("kethon")) L.push(`- Số người kết hôn: ${v("kethon")} người` + (has("taohon") ? `, trong đó tảo hôn ${v("taohon")} người.` : "."));
+  if (has("den") || has("di")) L.push(`- Số người chuyển đến: ${has("den") ? v("den") : "…"} người; số người chuyển đi: ${has("di") ? v("di") : "…"} người.`);
+  L.push("2. Công tác kế hoạch hóa gia đình");
+  if (has("mangthai_dang")) L.push(`- Số phụ nữ đang mang thai: ${v("mangthai_dang")} người.`); else if (has("mangthai")) L.push(`- Số phụ nữ mang thai: ${v("mangthai")} người.`);
+  if (has("vong_moi")) L.push(`- Số nữ đặt vòng tránh thai mới: ${v("vong_moi")} người` + (has("vong_thay") ? `, trong đó thay vòng ${v("vong_thay")} người.` : "."));
+  if (has("cay_moi")) L.push(`- Số nữ mới cấy thuốc tránh thai: ${v("cay_moi")} người` + (has("cay_thay") ? `, trong đó thay que cấy ${v("cay_thay")} người.` : "."));
+  if (has("tsnam") || has("tsnu")) L.push(`- Số người mới triệt sản: nam ${has("tsnam") ? v("tsnam") : "…"} người, nữ ${has("tsnu") ? v("tsnu") : "…"} người.`);
+  if (has("vong_thoi") || has("cay_thoi")) L.push(`- Số nữ thôi sử dụng biện pháp tránh thai: vòng ${has("vong_thoi") ? v("vong_thoi") : "…"} người, cấy ${has("cay_thoi") ? v("cay_thoi") : "…"} người.`);
+  L.push("II. ĐÁNH GIÁ CHUNG"); L.push("1. Ưu điểm");
+  L.push("- Công tác thu thập, cập nhật thông tin biến động dân số được cộng tác viên thực hiện thường xuyên, số liệu được tổng hợp đầy đủ, kịp thời.");
+  if (has("sinh_con2")) L.push(`- Số trẻ sinh ra là con thứ 2 (${v("sinh_con2")} trẻ) cho thấy nhiều gia đình đã hưởng ứng chủ trương sinh đủ hai con, nuôi dạy con tốt.`);
+  L.push("2. Tồn tại, hạn chế và nguyên nhân");
+  if (has("sinh_con3")) L.push(`- Vẫn còn ${v("sinh_con3")} trẻ sinh ra là con thứ 3 trở lên; công tác tư vấn, chăm sóc sức khỏe sinh sản cần tiếp tục được quan tâm.`);
+  if (has("sinh_nam") && has("sinh_nu")) L.push(`- Tỷ số giới tính khi sinh (${pc("sinh_nam", "sinh_nu")} trẻ nam/100 trẻ nữ) cần được theo dõi, so sánh với mức cân bằng tự nhiên (khoảng 104–106).`);
+  L.push("- …");
+  L.push("III. PHƯƠNG HƯỚNG, NHIỆM VỤ KỲ TỚI");
+  L.push("- Tiếp tục tuyên truyền, vận động mỗi gia đình sinh đủ hai con, nuôi dạy con tốt; sinh con đúng độ tuổi, khoảng cách hợp lý.");
+  L.push("- Duy trì thu thập, cập nhật thông tin biến động dân số hằng tháng; nâng cao chất lượng số liệu.");
+  L.push("- Thực hiện các chỉ tiêu kế hoạch hóa gia đình, tầm soát trước sinh và sơ sinh, giảm thiểu mất cân bằng giới tính khi sinh.");
+  L.push("IV. ĐỀ XUẤT, KIẾN NGHỊ"); L.push("- …");
+  return L.join("\n");
+}
 async function draftWithClaude(rep){
   if (!cap.sample) return;
   const ta = $("#t-body"), s = S.settings;
@@ -3238,7 +3273,7 @@ ${outline ? "DÀN Ý / KHUNG CẦN BÁM THEO (giữ nguyên các mã dạng {r1.
 YÊU CẦU:
 - Văn phong hành chính, ngắn gọn, chính xác. Mở đầu bằng một câu căn cứ, kết thúc câu dẫn bằng "như sau:".
 - Bố cục: I. KẾT QUẢ THỰC HIỆN (theo nhóm chỉ tiêu); II. ĐÁNH GIÁ CHUNG (1. Ưu điểm; 2. Tồn tại, hạn chế và nguyên nhân); III. PHƯƠNG HƯỚNG, NHIỆM VỤ KỲ TỚI; IV. ĐỀ XUẤT, KIẾN NGHỊ.
-- Khi nhắc tới một số liệu có trong biểu, viết bằng mã dạng {r<số>.c<số>} (ví dụ {r1.c1}) thay cho con số. Chỉ tiêu "chưa có" số thì không nêu số.
+- Khi nhắc tới một số liệu có trong biểu, viết bằng mã dạng {r<số>.c<số>} (ví dụ {r1.c1}) thay cho con số. Tỷ lệ phần trăm viết bằng mã {%r<a>/r<b>} (ví dụ {%r5/r1} là hàng r5 chia hàng r1 nhân 100). Chỉ tiêu "chưa có" số thì không nêu số.\n- Phần sinh phải nêu riêng: tổng số trẻ sinh, nam, nữ, tỷ số giới tính khi sinh; số trẻ là con thứ 2 và tỷ lệ so với tổng số trẻ sinh; số trẻ là con thứ 3 trở lên và tỷ lệ; con của phụ nữ dưới 20 tuổi (nếu biểu có các chỉ tiêu này).
 - Không viết quốc hiệu, tên cơ quan, số ký hiệu, nơi nhận, chữ ký. Không dùng markdown, không dùng dấu ** hay #.
 - Mỗi đoạn trên một dòng; ý liệt kê bắt đầu bằng "- ".
 Chỉ trả về nội dung báo cáo.`;
@@ -3736,6 +3771,7 @@ document.addEventListener("click", async e => {
     case "delnote": rep.notes = (rep.notes||[]).filter(n => n.id !== b.dataset.id); saveReportSoon(rep); render(); break;
     case "undotext": if (rep.prevText != null) { rep.text = rep.prevText; delete rep.prevText; saveReportSoon(rep); $("#tabbody").innerHTML = tabText(rep); bindText(rep); toast("Đã khôi phục nội dung trước khi cập nhật."); } break;
     case "draft": draftWithClaude(rep); break;
+    case "draftlib": { if (rep.text && rep.text.trim() && !await confirmBox("Thay nội dung đang có bằng bản soạn theo mẫu? Có thể bấm “Hoàn tác” để lấy lại.", "Soạn theo mẫu")) break; rep.prevText = rep.text || ""; rep.text = textFromData(rep); saveReportSoon(rep); $("#tabbody").innerHTML = tabText(rep); bindText(rep); toast("Đã soạn nội dung theo số liệu của biểu. Anh/chị bổ sung phần đánh giá, kiến nghị cho sát thực tế."); break; }
     case "stopdraft": draftCtl?.abort(); break;
     case "insph": insertPlaceholder(rep); break;
     case "docx": exportDocx(rep); break;

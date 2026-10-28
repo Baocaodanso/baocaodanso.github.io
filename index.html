@@ -408,6 +408,7 @@ ul.rvl{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap
 .rvi.i{color:var(--muted)}.rvi.i::before{content:"ⓘ "}
 .rvi:hover{background:var(--surface-2);text-decoration:underline}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) table.bt th.bt-paper,:root:not([data-theme="light"]) table.bt td.bt-paper{background:#2a2518}:root:not([data-theme="light"]) table.bt input.btpin{background:#221e14;color:inherit}}
+.btn.warnb{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
 .ckl{display:flex;flex-direction:column}
 .cki{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
 .cki:first-child{border-top:0;padding-top:2px}
@@ -1074,6 +1075,7 @@ function repAuto(rep){
   if (!list.length && !mg.impMonths.length) return { m:null, n:0, thon:0, warn:[], imp:[] };
   return { m: sumPer(mg.per, dbs), n: list.length, thon: new Set(list.map(phKey)).size, warn: metricsOf(list, opts).warn, imp: mg.impMonths };
 }
+function autoByName(name){ const n = noDia(name); if (/nguoi cao tuoi.*kham suc khoe/.test(n)) return "nct"; if (/cap ket hon.*(tu van|kham suc khoe)/.test(n) && !/so nguoi/.test(n)) return "tuvan_kh"; return null; }
 function compute(tpl, rep, auto){
   const V = {}, M = {};
   auto = auto || repAuto(rep);
@@ -1084,7 +1086,8 @@ function compute(tpl, rep, auto){
     if (!isInputCell(r,c)) continue;
     const k = r.id + "|" + c.id;
     if (base[k] != null) { V[k] = base[k]; M[k] = "base"; continue; }
-    if (r.auto && c.id === ac && auto.m && auto.m[r.auto] != null) { V[k] = auto.m[r.auto]; M[k] = "auto"; continue; }
+    const ak = r.auto || autoByName(r.name);
+    if (ak && c.id === ac && auto.m && auto.m[ak] != null) { V[k] = auto.m[ak]; M[k] = "auto"; continue; }
     let sum = null, n = 0;
     for (const p of parts) if (p.values && p.values[k] != null) { sum = (sum||0) + p.values[k]; n++; }
     if (sum != null) { V[k] = sum; M[k] = "sum:" + n; }
@@ -2440,13 +2443,15 @@ function mergeImported(R, dbs, list, opts, dbKey){
       if (!inR(d)) continue; const v = d.nam*12 + d.from; if (phMonths.has(v)) continue;
       const vals = d.perDb[db]; if (!vals) continue; used.add(v);
       for (const k of Object.keys(vals)) { if (STOCK_KEYS.has(k)) { if (v > lastImp) { lastImp = v; stock = vals[k]; } } else if (k in m) m[k] += vals[k] || 0; }
+      if (d.perThon) for (const [t, tv] of Object.entries(d.perThon)) { if ((tv._db || matchThon(t, "").diaBan) !== db) continue; for (const [xk, mk] of BT_XMAP) if (tv[xk] != null) m[mk] = (m[mk] || 0) + tv[xk]; }
     }
     if (lastImp > lastPh && stock != null) m.mangthai_dang = stock;
     per[db] = m;
   }
   return { per, impMonths: [...used].sort((a,b) => a - b) };
 }
-const sumPer = (per, dbs) => { const t = Object.fromEntries(METRICS.map(([k]) => [k, 0])); for (const db of dbs) for (const k in t) t[k] += (per[db] && per[db][k]) || 0; return t; };
+const BT_XMAP = [["x_chet", "chet"], ["x_den", "den"], ["x_di", "di"], ["x_nct", "nct"], ["x_tuvan_kh", "tuvan_kh"]];
+const sumPer = (per, dbs) => { const t = Object.fromEntries(METRICS.map(([k]) => [k, 0])); for (const db of dbs) for (const k of Object.keys(per[db] || {})) if (typeof per[db][k] === "number") t[k] = (t[k] || 0) + per[db][k]; return t; };
 const ymText = arr => { if (!arr.length) return ""; const f = v => `${pad2(((v-1)%12)+1)}/${Math.floor((v-1)/12)}`; return arr.length === 1 ? `tháng ${f(arr[0])}` : `tháng ${f(arr[0])}–${f(arr[arr.length-1])}`; };
 function officialFor(rep){
   if (rep.scope || rep.period.type === "ngay") return null;
@@ -2828,7 +2833,7 @@ async function btSave(){
   const preview = withData.map(g => { const cur = d && d.perDb && d.perDb[g.db] || {}; const ch = B01_KEYS.map(k => [k, btSum(k, g.thon)]).filter(([k, v]) => v != null && (cur[k] ?? null) !== v).map(([k, v]) => `${B01_NAMES[k].replace(/^– /, "")} ${cur[k] ?? "trống"}→${v}`); return `${g.db}: ${ch.length ? ch.slice(0, 6).join(", ") + (ch.length > 6 ? "…" : "") : "không đổi"}`; }).join(" | ");
   if (!await confirmBox(`Cập nhật Biểu 01 tháng ${pad2(mth)}/${y} theo số các thôn? ${preview}${part.length ? ` · Lưu ý: ${part.map(g => g.db).join(", ")} còn thôn chưa nhập, số địa bàn sẽ chỉ cộng các thôn đã nhập.` : ""}${RV.err.length ? ` · CẢNH BÁO: còn ${RV.err.length} chỗ lệch khi rà soát (ví dụ: ${RV.err[0].msg}).` : ""}`, RV.err.length ? "Vẫn lưu" : "Lưu và cập nhật")) return;
   if (!d) { d = { id, loai:"b01_thang", nam:y, from:mth, to:mth, toanXa:{}, perDb:{}, donVi:S.settings.donViBieu || "", nguon:[], importedAt:Date.now() }; S.solieu.push(d); }
-  d.perDb = d.perDb || {}; d.perThon = d.perThon || {};
+  d.perDb = d.perDb || {}; d.perThon = d.perThon || {}; const oldTx = { ...d.toanXa };
   for (const g of G) { d.perDb[g.db] = d.perDb[g.db] || {}; for (const t of g.thon) if (Object.keys(BT.data[t]).length) d.perThon[t] = { ...BT.data[t], _db: g.db }; }
   d.tongGiay = clone(BT.pt || {});
   const changes = [], keys = new Set();
@@ -2837,6 +2842,8 @@ async function btSave(){
   d.nguon = [...new Set([...(d.nguon || []), "Biểu tháng theo thôn nhập trên trang"])];
   if (changes.length) await slSaveDoc(d, changes, `Nhập biểu tháng theo thôn ${pad2(mth)}/${y}`); else await store.put("solieu", d);
   const lks = changes.length ? await slPropagate(d, changes, `Tự cập nhật theo biểu thôn tháng ${pad2(mth)}`) : [];
+  // kỳ báo cáo đã lấy “số đã báo cáo” của tháng này: thay các ô còn giữ số cũ
+  for (const rep of S.reports) { try { const of = officialFor(rep); if (!of || of.id !== d.id) continue; const ac = autoColId(rep.tpl); let n = 0; for (const row of rep.tpl.rows) { if (!row.auto) continue; const key = row.id + "|" + ac; if (rep.base && rep.base[key] != null && rep.base[key] === oldTx[row.auto] && d.toanXa[row.auto] != null && d.toanXa[row.auto] !== oldTx[row.auto]) { rep.base[key] = d.toanXa[row.auto]; n++; } } if (n) { rep.updatedAt = Date.now(); await store.put("reports", rep); } } catch(e){} }
   BT.dirty = false; render();
   toast(`Đã lưu biểu tháng ${pad2(mth)}/${y}${changes.length ? `: ${changes.filter(c => c.db).length} ô địa bàn, Toàn xã${lks.length ? `, ${lks.length} bảng lũy kế` : ""}` : " (số địa bàn không đổi)"}.`);
 }
@@ -3223,13 +3230,30 @@ function viewReport(rep){
     <div class="tabs" role="tablist">${tabs.map(([k,l]) => `<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}</div>
     <div id="tabbody">${S.tab==="data" ? tabData(rep) : S.tab==="text" ? tabText(rep) : tabExport(rep)}</div>`;
 }
+function btStatus(y, m){
+  const all = btThon().flatMap(g => g.thon), d = S.solieu.find(x => x.id === `b01t-${y}-${pad2(m)}`);
+  const pt = d && d.perThon ? Object.keys(d.perThon).filter(t => Object.keys(d.perThon[t]).some(k => k !== "_db" && d.perThon[t][k] != null)) : [];
+  const n = all.filter(t => pt.some(k => stripPre(k) === stripPre(t))).length;
+  return { n, total: all.length, d, miss: all.filter(t => !pt.some(k => stripPre(k) === stripPre(t))) };
+}
+function repPhieuPanel(rep){
+  if (rep.period.type === "ngay") return "";
+  const [a, b] = periodRange(rep.period), y = rep.period.year, ms = []; for (let m = a; m <= b; m++) ms.push(m);
+  const sc = rep.scope ? btThon().find(g => g.db === rep.scope) : null;
+  const st = ms.map(m => { const s = btStatus(y, m); if (sc) { const pt = s.d && s.d.perThon ? Object.keys(s.d.perThon) : []; s.total = sc.thon.length; s.n = sc.thon.filter(t => pt.some(k => stripPre(k) === stripPre(t))).length; s.miss = sc.thon.filter(t => !pt.some(k => stripPre(k) === stripPre(t))); } return { m, ...s }; });
+  const incomplete = st.filter(x => x.n < x.total);
+  return `<div class="panel stack" style="padding:10px 14px"><div class="row between"><b class="small">Phiếu thu thập (biểu tháng theo thôn) của kỳ</b><span class="small muted">Số tự động lấy theo biểu thôn đã lưu; tháng chưa có biểu thôn dùng số đã báo cáo (MIS/Excel/ảnh).</span></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap">${st.map(x => `<button class="btn sm ${x.n >= x.total ? "" : x.n ? "warnb" : ""}" data-act="gobt" data-m="${x.m}" data-y="${y}" title="${x.n < x.total && x.n ? "Còn thiếu: " + esc(x.miss.join(", ")) : ""}">T${pad2(x.m)}: ${x.n >= x.total ? "✓ đủ " + x.total + " thôn" : x.n ? `${x.n}/${x.total} thôn` : x.d ? "chưa có biểu thôn" : "chưa có số liệu"}</button>`).join("")}</div>
+    ${incomplete.some(x => x.n) ? `<div class="small" style="color:var(--warn)">Còn tháng chưa đủ thôn: số tự động của địa bàn có thôn thiếu chỉ cộng các thôn đã nhập. Bấm vào tháng để nhập tiếp.</div>` : ""}</div>`;
+}
 function tabData(rep){
   const tpl = rep.tpl, au = repAuto(rep), hasAuto = tpl.rows.some(r => r.auto);
   const [a, b] = periodRange(rep.period), tl = thonList(rep.scope || null), R = repRange(rep), rl = rangeLabel(R) + (rep.scope ? " · địa bàn " + esc(rep.scope) : "");
   return `<div class="split">
     <div class="stack" style="min-width:0">
       ${hasAuto ? `<div class="panel row between" style="padding:10px 14px"><div class="small">${au.m ? `<span class="chip auto">Tự động</span> ${au.n ? `${au.n} phiếu CTV, ${au.thon}${tl.length ? "/" + tl.length : ""} thôn` : ""}${au.n && au.imp.length ? "; " : ""}${au.imp.length ? `${ymText(au.imp)} từ số liệu đã báo cáo` : ""} · ${rl}` : `<span class="chip warn">Chưa có số liệu</span> ${rl}. Các chỉ tiêu tự động sẽ được điền khi có phiếu CTV hoặc số liệu đã báo cáo.`}${au.warn.length ? ` · <span style="color:var(--warn)">${au.warn.length} chỗ phiếu thiếu thông tin</span>` : ""}</div>
-        <button class="btn sm" data-act="gophieu" data-m="${b}" data-y="${rep.period.year}">Xem phiếu CTV</button></div>` : ""}
+        <button class="btn sm" data-act="gophieu" data-m="${b}" data-y="${rep.period.year}">Mở phiếu thu thập</button></div>` : ""}
+      ${hasAuto ? repPhieuPanel(rep) : ""}
       ${(() => { const of = hasAuto && officialFor(rep); return of ? `<div class="notice row between" style="gap:10px"><span>Kỳ này đã có số liệu ${of.loai === "b01_luyke" ? "lũy kế" : "tháng"} báo cáo chính thức (${esc((of.nguon||[])[0] || "")}).</span><button class="btn sm primary" data-act="useofficial">Dùng số đã báo cáo</button></div>` : ""; })()}
       <div class="row between"><div class="legend"><span><i style="background:var(--surface)"></i>Nhập tay</span>${hasAuto?`<span><i style="background:var(--auto)"></i>Tự động (phiếu CTV, số liệu đã báo cáo)</span>`:""}<span><i style="background:var(--sum)"></i>Cộng dồn từ tệp</span><span><i style="background:var(--calc)"></i>Tự tính</span></div>
       <div class="row"><button class="btn sm" data-act="xlsx-filled">Tải Excel</button><button class="btn sm danger" data-act="clearvals">Xóa số nhập tay</button></div></div>
@@ -4153,7 +4177,8 @@ document.addEventListener("click", async e => {
     case "nav": { tplDraft = null; const v = b.dataset.v === "hub" ? (S.hubLast || "reports") : b.dataset.v; if (v === "tuyentruyen") await ttLoad(); if (v === "phieu") await store.loadYear(S.pY); if (v === "diaban") { if (!S.dv) S.dv = dvInit(); await loadRange(dvR()); } go(v); break; }
     case "openrep": { const r = S.reports.find(x => x.id === b.dataset.id); if (r) { repTpl(r); await loadRange(repRange(r)); } go("report", { repId:b.dataset.id, tab:"data" }); break; }
     case "tab": S.tab = b.dataset.v; render(); break;
-    case "gophieu": S.pM = +b.dataset.m; S.pY = +b.dataset.y; await store.loadYear(S.pY); go("phieu"); break;
+    case "gophieu": S.pM = +b.dataset.m; S.pY = +b.dataset.y; await store.loadYear(S.pY); S.phMode = "thon"; BT.y = +b.dataset.y; BT.m = +b.dataset.m; btLoad(); go("phieu"); break;
+    case "gobt": S.phMode = "thon"; BT.y = +b.dataset.y; BT.m = +b.dataset.m; btLoad(); go("phieu"); break;
     case "ptab": S.pTab = b.dataset.v; render(); break;
     case "psec": S.pSec = b.dataset.v; render(); break;
     case "pnew": openPhieuEditor({ id:null, diaBan:S.pDB || "", thon:"", ctv:"", thang:S.pM, nam:S.pY, T:null, N:null, sections:Object.fromEntries(SECTIONS.map(s => [s.k, []])), files:[] }, null); break;

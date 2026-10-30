@@ -319,7 +319,7 @@ table.g td.v.hl{animation:hl 1.6s ease-out}
 .navsub{display:none;flex-direction:column;gap:1px;margin:0 0 4px 22px;border-left:1px solid var(--side-2,var(--line))}
 .navsub.open{display:flex}
 .nav .navsub button{font-size:12.5px;padding:6px 10px 6px 14px;opacity:.8}
-.hubbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hubbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .hubbar button{all:unset;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .hubbar button b{font-size:14px;color:var(--ink)}
 .hubbar button span{font-size:12px;color:var(--muted);line-height:1.35}
@@ -409,6 +409,8 @@ ul.rvl{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap
 .rvi:hover{background:var(--surface-2);text-decoration:underline}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) table.bt th.bt-paper,:root:not([data-theme="light"]) table.bt td.bt-paper{background:#2a2518}:root:not([data-theme="light"]) table.bt input.btpin{background:#221e14;color:inherit}}
 .btn.warnb{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
+table.bct{width:100%}table.bct td{padding:6px 10px}table.bt td.n{text-align:right}table.bct th.n{min-width:84px}
+.bt-sub.src-phieu{color:var(--ok)}.bt-sub.src-lech{color:var(--danger)}.bt-sub.src-thieu{color:var(--warn)}.bt-sub.src-mis{color:var(--accent)}
 .ckl{display:flex;flex-direction:column}
 .cki{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
 .cki:first-child{border-top:0;padding-top:2px}
@@ -612,6 +614,7 @@ table.g tr.hd td{background:var(--surface-2)}
       <button data-act="nav" data-v="phieu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Phiếu thu thập</span><span class="count" id="n-ph"></span></button>
       <button data-act="nav" data-v="hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Số liệu báo cáo</span><span class="count" id="n-rep"></span></button>
       <div class="navsub" id="navsub">
+        <button data-act="nav" data-v="baocaothang" data-sub="1"><span>Báo cáo tháng</span></button>
         <button data-act="nav" data-v="reports" data-sub="1"><span>Kỳ báo cáo, xuất Excel/Word</span></button>
         <button data-act="nav" data-v="diaban" data-sub="1"><span>Theo địa bàn, kỳ tùy chỉnh</span></button>
         <button data-act="nav" data-v="solieu" data-sub="1"><span>Đã gửi cấp trên, đối chiếu</span><span class="count" id="n-sl"></span></button>
@@ -1723,7 +1726,7 @@ async function ttAct(b){
 
 /* ===================== Điều hướng & hiển thị ===================== */
 function setNav(){
-  const map = { report:"reports", tpledit:"templates" }; const HUB = ["reports","report","diaban","solieu"];
+  const map = { report:"reports", tpledit:"templates" }; const HUB = ["baocaothang","reports","report","diaban","solieu"];
   const s0 = S.settings; $("#brand-name").textContent = s0.donViBieu || [s0.coQuan, s0.chuQuan].filter(Boolean).join(" ") || "Trạm Y tế";
   $("#crumb").innerHTML = `<span>${esc(s0.donViBieu || "Trạm Y tế")}</span><span>/</span><b>${esc(VIEW_NAMES[S.view] || "")}</b>`;
   const d = new Date(); $("#topstat").innerHTML = `<span>${["Chủ nhật","Thứ hai","Thứ ba","Thứ tư","Thứ năm","Thứ sáu","Thứ bảy"][d.getDay()]}, ${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}</span>${window.__STANDALONE && S.authInfo ? `<span class="chip">${esc(S.authInfo.ten || S.authInfo.user)}</span><button class="btn sm" data-act="sa-logout">Đăng xuất</button>` : ""}${window.__MODE === "fb" ? `<span class="chip ok">● Dùng chung</span>` : window.__STANDALONE ? `<span class="chip ok">● Lưu trên máy này</span>` : cap.access === "ok" ? `<span class="chip ok">● Đã kết nối dữ liệu</span>` : cap.access ? `<span class="chip warn">Chưa xem được dữ liệu</span>` : ""}`;
@@ -1757,16 +1760,17 @@ function render(){
   else if (S.view === "tpledit") m.innerHTML = viewTplEdit();
   else if (S.view === "settings") m.innerHTML = viewSettings();
   else if (S.view === "tuyentruyen") { m.innerHTML = viewTT(); afterTT(); }
-  if (["reports","report","diaban","solieu"].includes(S.view)) m.insertAdjacentHTML("afterbegin", hubBar());
+  else if (S.view === "baocaothang") { m.innerHTML = viewBCT(); afterBCT(); }
+  if (["baocaothang","reports","report","diaban","solieu"].includes(S.view)) m.insertAdjacentHTML("afterbegin", hubBar());
   const ab = accessBanner(); if (ab) m.insertAdjacentHTML("afterbegin", ab);
 }
 function phModeBar(){
   const cur = S.phMode === "ctv" ? "ctv" : "thon";
-  return `<div class="hubbar" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="tablist" aria-label="Phiếu thu thập">${[["thon","Biểu tháng theo thôn","Mẫu Biểu 01-DSX theo 19 thôn: nhập, nhập từ Excel/ảnh, xuất Excel theo mẫu"],["ctv","Phiếu CTV chi tiết (P0/CTV)","Danh sách từng trường hợp sinh, chết, chuyển đi, đến… của cộng tác viên"]].map(([k, l, d]) => `<button role="tab" aria-selected="${cur === k}" data-act="phmode" data-v="${k}"><b>${l}</b><span>${d}</span></button>`).join("")}</div>`;
+  return `<div class="hubbar" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="tablist" aria-label="Phiếu thu thập">${[["thon","Phiếu tháng theo thôn","Nhập số liệu hằng tháng của 19 thôn: gõ tay, nhập từ Excel/ảnh, đối chiếu tổng trên phiếu"],["ctv","Phiếu CTV chi tiết (P0/CTV)","Danh sách từng trường hợp sinh, chết, chuyển đi, đến… của cộng tác viên"]].map(([k, l, d]) => `<button role="tab" aria-selected="${cur === k}" data-act="phmode" data-v="${k}"><b>${l}</b><span>${d}</span></button>`).join("")}</div>`;
 }
 function hubBar(){
   const cur = S.view === "report" ? "reports" : S.view;
-  const T = [["reports","Kỳ báo cáo","Chọn kỳ tùy chỉnh, điền biểu, xuất Excel theo mẫu và báo cáo Word theo NĐ 30"],["diaban","Theo địa bàn","Số liệu 6 địa bàn, mốc thời gian tùy chỉnh, xuất Excel/Word"],["solieu","Đã gửi cấp trên","Biểu 01 hằng tháng, lũy kế, đối chiếu và sửa chỗ lệch"]];
+  const T = [["baocaothang","Báo cáo tháng","Tổng hợp từ phiếu thu thập: xem theo địa bàn, thôn; xuất Excel theo mẫu"],["reports","Kỳ báo cáo","Chọn kỳ tùy chỉnh, điền biểu, xuất Excel theo mẫu và báo cáo Word theo NĐ 30"],["diaban","Theo địa bàn","Số liệu 6 địa bàn, mốc thời gian tùy chỉnh, xuất Excel/Word"],["solieu","Đã gửi cấp trên","Biểu 01 hằng tháng, lũy kế, đối chiếu và sửa chỗ lệch"]];
   return `<div class="hubbar" role="tablist" aria-label="Số liệu báo cáo">${T.map(([k, l, d]) => `<button role="tab" aria-selected="${cur === k}" data-act="nav" data-v="${k}"><b>${l}</b><span>${d}</span></button>`).join("")}</div>`;
 }
 function go(view, extra={}){ Object.assign(S, {view}, extra); render(); window.scrollTo(0,0); }
@@ -2739,16 +2743,15 @@ function btMonths(){
     const m = i + 1, d = S.solieu.find(x => x.id === `b01t-${y}-${pad2(m)}`);
     const pt = d && d.perThon ? Object.entries(d.perThon).filter(([t, v]) => Object.keys(v).some(k => k !== "_db" && v[k] != null)) : [];
     const n = all.filter(t => pt.some(([k]) => stripPre(k) === stripPre(t))).length, miss = all.filter(t => !pt.some(([k]) => stripPre(k) === stripPre(t)));
-    const st = n >= all.length ? "full" : n ? "part" : d ? "mis" : (y > now.getFullYear() || (y === now.getFullYear() && m > now.getMonth() + 1)) ? "future" : "none";
-    const lab = { full:"Đủ 19 thôn", part:`${n}/${all.length} thôn`, mis:"Chỉ có số địa bàn", none:"Chưa nhập", future:"" }[st];
+    const st = n >= all.length ? "full" : n ? "part" : d ? "none" : (y > now.getFullYear() || (y === now.getFullYear() && m > now.getMonth() + 1)) ? "future" : "none";
+    const lab = { full:"Đủ 19 thôn", part:`${n}/${all.length} thôn`, mis:"Chưa nhập phiếu", none:"Chưa nhập phiếu", future:"" }[st];
     const t = d && d.toanXa || {};
     const tip = st === "part" ? `Còn thiếu: ${miss.join(", ")}` : st === "mis" ? "Có số liệu theo địa bàn (MIS/Excel), chưa có biểu theo thôn" : "";
     const last = d && d.suaTay && d.suaTay.length ? new Date(d.suaTay[d.suaTay.length - 1].at).toLocaleDateString("vi-VN") : "";
     return `<button class="btmon ${st}${m === BT.m ? " on" : ""}" data-act="bt-open" data-m="${m}" ${st === "future" ? "disabled" : ""} title="${esc(tip)}">
       <span class="btm-h"><b>Tháng ${pad2(m)}</b><span class="btm-s">${lab}</span></span>
-      ${d ? `<span class="btm-n">Sinh <b>${t.sinh_tong ?? "–"}</b> · Con thứ 2 <b>${t.sinh_con2 ?? "–"}</b><br>Mang thai <b>${t.mangthai_dang ?? "–"}</b> · Vòng <b>${t.vong_moi ?? "–"}</b></span>` : `<span class="btm-n muted">—</span>`}
-      ${last ? `<span class="btm-d">Sửa gần nhất ${last}</span>` : ""}</button>`; }).join("");
-  return `<div class="panel stack" style="padding:12px 14px"><div class="row between"><h3>Các tháng năm ${y}</h3><span class="small muted"><i class="lg full"></i>Đủ thôn <i class="lg part"></i>Còn thiếu thôn <i class="lg mis"></i>Chỉ có số địa bàn <i class="lg none"></i>Chưa nhập · Bấm một tháng để xem, sửa</span></div><div class="btmons">${cards}</div></div>`;
+      ${n && last ? `<span class="btm-d">Lưu gần nhất ${last}</span>` : ""}</button>`; }).join("");
+  return `<div class="panel stack" style="padding:12px 14px"><div class="row between"><h3>Tình trạng nhập phiếu năm ${y}</h3><span class="small muted"><i class="lg full"></i>Đủ thôn <i class="lg part"></i>Còn thiếu thôn <i class="lg none"></i>Chưa nhập · Bấm một tháng để nhập, sửa</span></div><div class="btmons">${cards}</div></div>`;
 }
 function btLoad(){
   const y = BT.y, m = BT.m, d = S.solieu.find(x => x.id === `b01t-${y}-${pad2(m)}`);
@@ -2786,15 +2789,15 @@ function viewBT(){
   const rows = MAU_THANG.map(r => r.head ? `<tr class="bt-h"><td></td><td>${esc(r.ten)}</td><td>Người</td><td class="bt-tx"></td>${P ? `<td class="bt-paper"></td>` : ""}${G.map(g => g.thon.map((t, i) => `<td class="${i === 0 ? "bt-first" : ""}"></td>`).join("") + (P ? `<td class="bt-paper"></td>` : "")).join("")}</tr>`
     : `<tr><td class="bt-stt">${esc(r.stt || "")}</td><td class="bt-name">${esc(r.ten)}${r.k === "sinh_tong" ? ` <span class="chip auto" style="font-size:10px;padding:0 5px">nam + nữ</span>` : ""}</td><td class="muted small">Người</td><td class="n bt-tx" data-btx="${r.k}">${btSum(r.k, all) ?? ""}</td>${P ? `<td class="bt-paper">${pin("_tx", r.k)}</td>` : ""}
       ${G.map(g => g.thon.map((t, i) => `<td class="${i === 0 ? "bt-first" : ""}"><input class="btin${r.k === "sinh_tong" ? " slro" : ""}" data-t="${esc(t)}" data-k="${r.k}" type="number" min="0" inputmode="numeric" value="${BT.data[t][r.k] ?? ""}"${r.k === "sinh_tong" ? ' readonly tabindex="-1"' : ""}></td>`).join("") + (P ? `<td class="bt-paper">${pin(g.db, r.k)}</td>` : "")).join("")}</tr>`).join("");
-  return `<div class="row between"><div><div class="eyebrow">Mẫu biểu tháng theo thôn · Biểu 01-DSX (Thông tư 01/2022/TT-BYT)</div><h1>Báo cáo thống kê chuyên ngành dân số tháng ${pad2(BT.m)}/${BT.y}</h1></div>
+  return `<div class="row between"><div><div class="eyebrow">Phiếu thu thập thông tin dân số · nhập liệu hằng tháng theo thôn</div><h1>Nhập phiếu tháng ${pad2(BT.m)}/${BT.y}</h1></div>
       <div class="row"><label class="lbl" for="bt-m">Tháng</label><select class="inp" id="bt-m" style="width:auto">${Array.from({length:12}, (_, i) => `<option value="${i+1}" ${i+1 === BT.m ? "selected" : ""}>${pad2(i+1)}</option>`).join("")}</select>
       <label class="lbl" for="bt-y">Năm</label><input class="inp" id="bt-y" type="number" value="${BT.y}" style="width:90px"></div></div>
     ${btMonths()}
     <div class="row between"><span class="small muted">Đã nhập ${filled}/${all.length} thôn${d && d.perThon ? " · đã có số liệu lưu cho tháng này" : ""}. Nhấn Enter để xuống ô dưới.</span>
-      <div class="row" style="gap:6px"><button class="btn sm ${P ? "primary" : ""}" data-act="bt-paper" title="Thêm cột nhập số tổng ghi trên biểu giấy để đối chiếu với tổng cộng các thôn">${P ? "✓ " : ""}Đối chiếu tổng trên biểu</button><label class="btn sm" for="bt-file">Nhập từ Excel, ảnh</label><input type="file" id="bt-file" accept=".xls,.xlsx,image/*" hidden><button class="btn sm" data-act="bt-blank">Tải biểu trống</button><button class="btn sm" data-act="bt-xlsx">Xuất Excel theo mẫu</button><button class="btn sm primary" data-act="bt-save">Lưu và cập nhật số liệu</button></div></div>
+      <div class="row" style="gap:6px"><button class="btn sm ${P ? "primary" : ""}" data-act="bt-paper" title="Thêm cột nhập số tổng ghi trên biểu giấy để đối chiếu với tổng cộng các thôn">${P ? "✓ " : ""}Đối chiếu tổng trên biểu</button><label class="btn sm" for="bt-file">Nhập từ Excel, ảnh</label><input type="file" id="bt-file" accept=".xls,.xlsx,image/*" hidden><button class="btn sm" data-act="bt-blank" title="Phiếu trống theo mẫu để phát cho cộng tác viên">Tải phiếu trống</button><button class="btn sm" data-act="bt-gobct">Xem báo cáo tháng ${pad2(BT.m)}</button><button class="btn sm primary" data-act="bt-save">Lưu phiếu</button></div></div>
     <div id="bt-rv"></div>
     <div class="tblwrap bt-wrap"><table class="bt">${head1}${head2}<tbody>${rows}</tbody></table></div>
-    <p class="small muted" style="margin:0">${P ? "Cột “Tổng trên biểu”: gõ số tổng ghi trên biểu giấy của từng địa bàn (và Toàn xã); ô xanh là khớp với cộng các thôn, ô đỏ là lệch. " : ""}Khi lưu: số các thôn được cộng theo địa bàn vào Biểu 01 tháng ${pad2(BT.m)}/${BT.y}; Toàn xã, lũy kế, Kỳ báo cáo, Theo địa bàn, Tổng quan tự cập nhật. Các chỉ tiêu 9–17 được lưu theo thôn để xuất biểu.</p>`;
+    <p class="small muted" style="margin:0">${P ? "Cột “Tổng trên biểu”: gõ số tổng ghi trên biểu giấy của từng địa bàn (và Toàn xã); ô xanh là khớp với cộng các thôn, ô đỏ là lệch. " : ""}Khi lưu phiếu: số các thôn được cộng theo địa bàn và cập nhật Báo cáo tháng ${pad2(BT.m)}/${BT.y}, lũy kế, Kỳ báo cáo, Theo địa bàn, Tổng quan. Xem và xuất báo cáo ở Số liệu báo cáo → Báo cáo tháng.</p>`;
 }
 function btReviewRender(){
   const w = $(".bt-wrap"), box = $("#bt-rv"); if (!w || !box) return;
@@ -2845,7 +2848,7 @@ async function btSave(){
   // kỳ báo cáo đã lấy “số đã báo cáo” của tháng này: thay các ô còn giữ số cũ
   for (const rep of S.reports) { try { const of = officialFor(rep); if (!of || of.id !== d.id) continue; const ac = autoColId(rep.tpl); let n = 0; for (const row of rep.tpl.rows) { if (!row.auto) continue; const key = row.id + "|" + ac; if (rep.base && rep.base[key] != null && rep.base[key] === oldTx[row.auto] && d.toanXa[row.auto] != null && d.toanXa[row.auto] !== oldTx[row.auto]) { rep.base[key] = d.toanXa[row.auto]; n++; } } if (n) { rep.updatedAt = Date.now(); await store.put("reports", rep); } } catch(e){} }
   BT.dirty = false; render();
-  toast(`Đã lưu biểu tháng ${pad2(mth)}/${y}${changes.length ? `: ${changes.filter(c => c.db).length} ô địa bàn, Toàn xã${lks.length ? `, ${lks.length} bảng lũy kế` : ""}` : " (số địa bàn không đổi)"}.`);
+  toast(`Đã lưu phiếu tháng ${pad2(mth)}/${y}${changes.length ? `: ${changes.filter(c => c.db).length} ô địa bàn, Toàn xã${lks.length ? `, ${lks.length} bảng lũy kế` : ""}` : " (số địa bàn không đổi)"}.`);
 }
 function btKeyOf(name){
   const n = noDia(name);
@@ -2886,26 +2889,27 @@ async function btImportXlsx(f){
     BT.dirty = true; render(); toast(`Đã điền ${n} ô từ trang tính “${used}”. Kiểm tra rồi bấm Lưu.`);
   } catch(e){ toast("Không đọc được tệp: " + (e.message || e), true); }
 }
-async function btExportXlsx(blank){
-  const ExcelJS = await loadLib("ExcelJS"), s = S.settings, G = btThon(), all = G.flatMap(g => g.thon);
-  const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet(`Thang ${pad2(BT.m)}`, { pageSetup:{ paperSize:9, orientation:"landscape", fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{ left:0.59, right:0.39, top:0.59, bottom:0.59, header:0.3, footer:0.3 } } });
+/* ===================== Xuất Excel theo mẫu Biểu 01-DSX (dùng chung: phiếu trống, báo cáo tháng theo thôn/địa bàn) ===================== */
+async function xlsxMau({ y, m, cols, val, tot, tag }){
+  const ExcelJS = await loadLib("ExcelJS"), s = S.settings;
+  const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet(`Thang ${pad2(m)}`, { pageSetup:{ paperSize:9, orientation: cols.length > 8 ? "landscape" : "portrait", fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{ left:0.79, right:0.59, top:0.79, bottom:0.79, header:0.3, footer:0.3 } } });
   const F = (sz, b, i) => ({ name:"Times New Roman", size:sz, bold:!!b, italic:!!i });
-  const nC = 4 + all.length, last = ws.getColumn(nC).letter, mid = Math.max(5, Math.floor(nC / 2) + 1);
-  ws.columns = [{ width:5 }, { width:40 }, { width:8 }, { width:9 }, ...all.map(() => ({ width:8.5 }))];
+  const nC = 4 + cols.length, last = ws.getColumn(nC).letter, mid = Math.max(4, Math.floor(nC / 2) + 1);
+  ws.columns = [{ width:5 }, { width:42 }, { width:8 }, { width:10 }, ...cols.map(() => ({ width: cols.length > 8 ? 8.5 : 11 }))];
   const put = (r, c, v, f, al) => { const cell = ws.getCell(r, c); cell.value = v; cell.font = f; if (al) cell.alignment = al; return cell; };
   put(1, 1, "Biểu 01-DSX", F(13, true)); put(2, 1, "(Ban hành tại Thông tư số 01/2022/TT-BYT)", F(12, false, true)); put(3, 1, "Ngày nhận báo cáo: Chậm nhất 05 ngày làm việc kể từ thời điểm kết thúc kỳ báo cáo.", F(12, false, true));
-  put(1, mid, `Đơn vị báo cáo: ${s.donViBieu || [s.coQuan, s.chuQuan].filter(Boolean).join(" - ") || "……"}`, F(12)); put(2, mid, "Đơn vị nhận báo cáo:", F(12)); put(3, mid, "+ Chi cục Dân số tỉnh", F(12)); put(4, mid, `+ ${s.chuQuan ? s.chuQuan.replace(/^UBND/i, "UBND") : "UBND xã"}`, F(12));
+  put(1, mid, `Đơn vị báo cáo: ${s.donViBieu || [s.coQuan, s.chuQuan].filter(Boolean).join(" - ") || "……"}`, F(12)); put(2, mid, "Đơn vị nhận báo cáo:", F(12)); put(3, mid, "+ Chi cục Dân số tỉnh", F(12)); put(4, mid, `+ ${s.chuQuan || "UBND xã"}`, F(12));
   ws.mergeCells(6, 1, 6, nC); put(6, 1, "BÁO CÁO THỐNG KÊ CHUYÊN NGÀNH DÂN SỐ", F(14, true), { horizontal:"center" });
-  ws.mergeCells(7, 1, 7, nC); put(7, 1, `THÁNG ${pad2(BT.m)} NĂM ${BT.y}`, F(14, true), { horizontal:"center" });
+  ws.mergeCells(7, 1, 7, nC); put(7, 1, `THÁNG ${pad2(m)} NĂM ${y}`, F(14, true), { horizontal:"center" });
   const B = { top:{ style:"thin" }, left:{ style:"thin" }, bottom:{ style:"thin" }, right:{ style:"thin" } }, HR = 9;
   ws.mergeCells(HR, 1, HR, 2); put(HR, 1, "Tên chỉ tiêu", F(12, true), { horizontal:"center", vertical:"middle", wrapText:true });
   put(HR, 3, "Đơn vị tính", F(12, true), { horizontal:"center", vertical:"middle", wrapText:true }); put(HR, 4, "Toàn xã", F(12, true), { horizontal:"center", vertical:"middle", wrapText:true });
-  all.forEach((t, i) => put(HR, 5 + i, t, F(11, true), { horizontal:"center", vertical:"middle", wrapText:true }));
+  cols.forEach((t, i) => put(HR, 5 + i, t, F(11, true), { horizontal:"center", vertical:"middle", wrapText:true }));
   ws.getRow(HR).height = 34;
   MAU_THANG.forEach((r, i) => { const R = HR + 1 + i;
     put(R, 1, r.stt || "", F(12, !!r.stt), { horizontal:"center", vertical:"middle" }); put(R, 2, r.ten, F(12, !!r.stt && !r.head), { vertical:"middle", wrapText:true }); put(R, 3, "Người", F(12), { horizontal:"center", vertical:"middle" });
-    if (!r.head) { all.forEach((t, j) => { const v = blank ? null : BT.data[t][r.k]; put(R, 5 + j, v ?? null, F(12), { horizontal:"center", vertical:"middle" }); });
-      const tot = blank ? null : btSum(r.k, all); const c = ws.getCell(R, 4); c.value = { formula:`SUM(${ws.getColumn(5).letter}${R}:${last}${R})`, result: tot ?? 0 }; c.font = F(12, true); c.alignment = { horizontal:"center", vertical:"middle" }; }
+    if (!r.head) { cols.forEach((_, j) => put(R, 5 + j, val(r.k, j) ?? null, F(12), { horizontal:"center", vertical:"middle" }));
+      const tv = tot(r.k), c = ws.getCell(R, 4); c.value = tv == null ? null : { formula:`SUM(${ws.getColumn(5).letter}${R}:${last}${R})`, result: tv }; c.font = F(12, true); c.alignment = { horizontal:"center", vertical:"middle" }; }
     for (let c = 1; c <= nC; c++) ws.getCell(R, c).border = B; });
   for (let c = 1; c <= nC; c++) ws.getCell(HR, c).border = B;
   const fr = HR + MAU_THANG.length + 2, d = ndDate(todayISO());
@@ -2914,9 +2918,68 @@ async function btExportXlsx(blank){
   ws.mergeCells(fr + 1, mid, fr + 1, nC); put(fr + 1, mid, (s.chucVu || "THỦ TRƯỞNG ĐƠN VỊ").toUpperCase(), F(13, true), { horizontal:"center" });
   ws.mergeCells(fr + 5, 1, fr + 5, 3); put(fr + 5, 1, s.nguoiLap || "", F(13, true), { horizontal:"center" });
   ws.mergeCells(fr + 5, mid, fr + 5, nC); put(fr + 5, mid, s.nguoiKy || "", F(13, true), { horizontal:"center" });
-  ws.views = [{ state:"frozen", xSplit:4, ySplit:HR }];
-  ws.pageSetup.printTitlesRow = `${HR}:${HR}`;
-  await saveFile(safeName(`Bieu 01-DSX theo thon thang ${pad2(BT.m)}-${BT.y}${blank ? " (trong)" : ""}`) + ".xlsx", new Blob([await wb.xlsx.writeBuffer()], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+  ws.views = [{ state:"frozen", xSplit:4, ySplit:HR }]; ws.pageSetup.printTitlesRow = `${HR}:${HR}`;
+  await saveFile(safeName(`Bieu 01-DSX ${tag} thang ${pad2(m)}-${y}`) + ".xlsx", new Blob([await wb.xlsx.writeBuffer()], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+}
+async function btExportXlsx(blank){ // phiếu: biểu trống hoặc số đang nhập, theo 19 thôn
+  const all = btThon().flatMap(g => g.thon);
+  await xlsxMau({ y:BT.y, m:BT.m, cols: all, val: (k, j) => blank ? null : BT.data[all[j]][k], tot: k => blank ? null : btSum(k, all), tag: blank ? "phieu trong theo thon" : "phieu theo thon" });
+}
+
+/* ===================== Báo cáo tháng (tổng hợp từ phiếu thu thập) ===================== */
+const BCT = { y:null, m:null, thon:false };
+function bctInit(){ if (BCT.y) return; const now = new Date(); BCT.y = now.getFullYear(); BCT.m = now.getMonth() || 12; if (!now.getMonth()) BCT.y--; }
+function bctModel(y, m){
+  const d = S.solieu.find(x => x.id === `b01t-${y}-${pad2(m)}`), G = btThon();
+  const pt = (d && d.perThon) || {}, thonV = (t, k) => { const e = Object.entries(pt).find(([n]) => stripPre(n) === stripPre(t)); return e ? e[1][k] ?? null : null; };
+  const dbs = G.map(g => { const n = g.thon.filter(t => Object.entries(pt).some(([nm, v]) => stripPre(nm) === stripPre(t) && Object.keys(v).some(k => k !== "_db" && v[k] != null))).length;
+    return { ...g, n, src: n >= g.thon.length ? "phieu" : n ? "thieu" : (d && d.perDb && d.perDb[g.db] && Object.keys(d.perDb[g.db]).length) ? "mis" : "none" }; });
+  const sumT = (k, list) => { let any = false, s = 0; for (const t of list) { const v = thonV(t, k); if (v != null) { any = true; s += v; } } return any ? s : null; };
+  for (const g of dbs) if (g.n && d && d.perDb && d.perDb[g.db]) { const off = B01_KEYS.filter(k => { const sv = sumT(k, g.thon); return sv != null && (d.perDb[g.db][k] ?? null) !== sv; }); if (off.length) { g.src = "lech"; g.off = off; } }
+  const dbV = (k, g) => B01_KEYS.includes(k) ? (d && d.perDb && d.perDb[g.db] ? d.perDb[g.db][k] ?? null : null) : sumT(k, g.thon);
+  const txV = k => { if (B01_KEYS.includes(k)) return d && d.toanXa ? d.toanXa[k] ?? null : null; const vs = dbs.map(g => dbV(k, g)); return vs.every(v => v == null) ? null : vs.reduce((a, v) => a + (v || 0), 0); };
+  return { d, dbs, thonV, dbV, txV, nThon: dbs.reduce((a, g) => a + g.n, 0), total: dbs.reduce((a, g) => a + g.thon.length, 0) };
+}
+function bctMonths(){
+  const y = BCT.y, now = new Date();
+  return `<div class="btmons">${Array.from({ length:12 }, (_, i) => { const m = i + 1, M = bctModel(y, m), t = (M.d && M.d.toanXa) || {};
+    const st = M.nThon >= M.total ? "full" : M.nThon ? "part" : M.d ? "mis" : (y > now.getFullYear() || (y === now.getFullYear() && m > now.getMonth() + 1)) ? "future" : "none";
+    const lab = { full:"Từ phiếu đủ thôn", part:`Phiếu ${M.nThon}/${M.total} thôn`, mis:"Số MIS/Excel", none:"Chưa có số liệu", future:"" }[st];
+    return `<button class="btmon ${st}${m === BCT.m ? " on" : ""}" data-act="bct-m" data-m="${m}" ${st === "future" ? "disabled" : ""}><span class="btm-h"><b>Tháng ${pad2(m)}</b><span class="btm-s">${lab}</span></span>
+      ${M.d ? `<span class="btm-n">Sinh <b>${t.sinh_tong ?? "–"}</b> · Con thứ 2 <b>${t.sinh_con2 ?? "–"}</b><br>Mang thai <b>${t.mangthai_dang ?? "–"}</b> · Vòng <b>${t.vong_moi ?? "–"}</b></span>` : `<span class="btm-n muted">—</span>`}</button>`; }).join("")}</div>`;
+}
+function viewBCT(){
+  bctInit();
+  const y = BCT.y, m = BCT.m, M = bctModel(y, m), showT = BCT.thon;
+  const srcLab = { phieu:"từ phiếu", thieu:"phiếu thiếu thôn", mis:"số MIS/Excel", lech:"phiếu chưa lưu vào tổng", none:"chưa có" };
+  const head = `<tr><th class="bt-stt">STT</th><th class="bt-name">Tên chỉ tiêu</th><th>Đơn vị tính</th><th class="n bt-tx">Toàn xã</th>${M.dbs.map(g => showT ? g.thon.map((t, i) => `<th class="n${i === 0 ? " bt-first" : ""}">${esc(t)}<br><span class="bt-sub">${esc(g.db)}</span></th>`).join("") : `<th class="n">${esc(g.db)}<br><span class="bt-sub src-${g.src}">${srcLab[g.src]}${g.src === "thieu" ? ` ${g.n}/${g.thon.length}` : ""}</span></th>`).join("")}</tr>`;
+  const rows = MAU_THANG.map(r => r.head ? `<tr class="bt-h"><td></td><td>${esc(r.ten)}</td><td>Người</td><td class="bt-tx"></td>${M.dbs.map(g => showT ? g.thon.map(() => "<td></td>").join("") : "<td></td>").join("")}</tr>`
+    : `<tr><td class="bt-stt">${esc(r.stt || "")}</td><td class="bt-name">${esc(r.ten)}</td><td class="muted small">Người</td><td class="n bt-tx">${M.txV(r.k) ?? ""}</td>${M.dbs.map(g => showT ? g.thon.map((t, i) => `<td class="n${i === 0 ? " bt-first" : ""}">${M.thonV(t, r.k) ?? ""}</td>`).join("") : `<td class="n">${M.dbV(r.k, g) ?? ""}</td>`).join("")}</tr>`).join("");
+  const rep = S.reports.find(x => x.tplId === "tdsx01" && !x.scope && x.period.type === "thang" && x.period.n === m && x.period.year === y);
+  const miss = M.dbs.filter(g => g.src !== "phieu");
+  return `<div class="row between"><div><div class="eyebrow">Báo cáo tháng · tổng hợp từ phiếu thu thập</div><h1>Báo cáo thống kê chuyên ngành dân số tháng ${pad2(m)}/${y}</h1></div>
+      <div class="row"><label class="lbl" for="bct-y">Năm</label><input class="inp" id="bct-y" type="number" value="${y}" style="width:90px"></div></div>
+    <div class="panel stack" style="padding:12px 14px"><div class="row between"><h3>Chọn tháng báo cáo</h3><span class="small muted"><i class="lg full"></i>Từ phiếu đủ thôn <i class="lg part"></i>Phiếu còn thiếu thôn <i class="lg mis"></i>Số MIS/Excel <i class="lg none"></i>Chưa có</span></div>${bctMonths()}</div>
+    <div class="panel row between" style="padding:10px 14px;gap:10px"><div class="small">${M.d ? `Nguồn số liệu: phiếu thu thập <b>${M.nThon}/${M.total} thôn</b>${miss.length ? ` · ${miss.map(g => `${esc(g.db)}: ${srcLab[g.src]}`).join(", ")}` : " · tất cả địa bàn lấy từ phiếu"}` : "Tháng này chưa có số liệu. Nhập phiếu thu thập để tạo báo cáo."}</div>
+      <div class="row" style="gap:6px"><button class="btn sm" data-act="bct-edit">${M.nThon ? "Sửa phiếu tháng này" : "Nhập phiếu tháng này"}</button>${M.d ? `<button class="btn sm ${showT ? "primary" : ""}" data-act="bct-thon">${showT ? "✓ " : ""}Xem theo thôn</button><button class="btn sm" data-act="bct-xlsx" data-v="db">Xuất Excel theo địa bàn</button><button class="btn sm" data-act="bct-xlsx" data-v="thon">Xuất Excel theo thôn</button><button class="btn sm primary" data-act="bct-rep">${rep ? "Mở kỳ báo cáo, xuất Word NĐ 30" : "Tạo kỳ báo cáo Biểu 01, xuất Word NĐ 30"}</button>` : ""}</div></div>
+    ${M.dbs.some(g => g.src === "lech") ? `<div class="notice" style="border-left-color:var(--warn)">${M.dbs.filter(g => g.src === "lech").map(g => `<b>${esc(g.db)}</b>: phiếu đã có ${g.n} thôn nhưng số tổng địa bàn đang lưu khác cộng các thôn (${g.off.slice(0, 3).map(k => `${B01_NAMES[k].replace(/^– /, "")} ${M.d.perDb[g.db][k] ?? "trống"} ≠ ${M.thonV ? g.thon.reduce((a, t) => a + (M.thonV(t, k) || 0), 0) : ""}`).join("; ")}${g.off.length > 3 ? "…" : ""}).`).join(" ")} Bảng dưới đang hiện số tổng đang lưu. Bấm “Sửa phiếu tháng này” → “Lưu phiếu” để cập nhật theo phiếu.</div>` : ""}
+    ${M.d ? `<div class="tblwrap bt-wrap"><table class="bt bct"><thead>${head}</thead><tbody>${rows}</tbody></table></div>
+    <p class="small muted" style="margin:0">Số liệu chỉ để xem. Muốn sửa, bấm “Sửa phiếu tháng này”; sau khi lưu phiếu, báo cáo tháng, lũy kế và kỳ báo cáo tự cập nhật. Địa bàn ghi “số MIS/Excel” là chưa nhập phiếu thôn, đang dùng số đã nhập từ tệp.</p>` : `<div class="panel empty"><b>Chưa có số liệu tháng ${pad2(m)}/${y}</b><span>Vào Phiếu thu thập để nhập số liệu của 19 thôn.</span><button class="btn primary" data-act="bct-edit">Nhập phiếu tháng ${pad2(m)}</button></div>`}`;
+}
+function afterBCT(){ const yi = $("#bct-y"); if (yi) yi.onchange = e => { BCT.y = +e.target.value || BCT.y; render(); }; }
+async function bctExport(kind){
+  const M = bctModel(BCT.y, BCT.m);
+  if (kind === "thon") { const all = M.dbs.flatMap(g => g.thon); await xlsxMau({ y:BCT.y, m:BCT.m, cols: all, val: (k, j) => M.thonV(all[j], k), tot: k => M.txV(k), tag:"theo thon" }); }
+  else await xlsxMau({ y:BCT.y, m:BCT.m, cols: M.dbs.map(g => g.db), val: (k, j) => M.dbV(k, M.dbs[j]), tot: k => M.txV(k), tag:"theo dia ban" });
+}
+async function bctOpenRep(){
+  const y = BCT.y, m = BCT.m; let rep = S.reports.find(x => x.tplId === "tdsx01" && !x.scope && x.period.type === "thang" && x.period.n === m && x.period.year === y);
+  if (!rep) { const t = S.templates.find(x => x.id === "tdsx01") || S.templates.find(x => /01-DSX/i.test(x.code)); if (!t) { toast("Chưa có biểu mẫu Biểu 01-DSX.", true); return; }
+    const period = { type:"thang", n:m, year:y }; period.label = periodLabel(period);
+    rep = { id:uid("b"), tplId:t.id, tpl:clone(t), title:`${t.code} ${period.label}`, period, scope:"", base:{}, parts:[], notes:[], ghiChu:{}, text:t.text || "", trichYeu:`Kết quả công tác dân số ${period.label}`, number:"", date:todayISO(), createdAt:Date.now(), updatedAt:Date.now() };
+    delete rep.tpl.xlsx; rep.tplHasX = !!t.xlsx; S.reports.push(rep); await loadRange(repRange(rep)); await store.put("reports", rep); repTpl(rep); toast(`Đã tạo kỳ báo cáo ${rep.title}, số liệu lấy từ phiếu thu thập.`); }
+  else await loadRange(repRange(rep));
+  go("report", { repId: rep.id, tab:"data" });
 }
 
 /* ===================== Đọc ảnh biểu viết tay (Biểu 01-DSX theo thôn/địa bàn) → xem, sửa → cập nhật số liệu ===================== */
@@ -3204,7 +3267,7 @@ const ICONS = {
   settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'
 };
 const ico = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
-const VIEW_NAMES = { home:"Tổng quan", phieu:"Báo cáo / Phiếu thu thập", solieu:"Số liệu báo cáo / Đã gửi cấp trên", diaban:"Số liệu báo cáo / Theo địa bàn", reports:"Số liệu báo cáo / Kỳ báo cáo", report:"Số liệu báo cáo / Kỳ báo cáo", tuyentruyen:"Tuyên truyền", templates:"Biểu mẫu", tpledit:"Biểu mẫu", settings:"Thông tin cơ quan" };
+const VIEW_NAMES = { home:"Tổng quan", phieu:"Báo cáo / Phiếu thu thập", solieu:"Số liệu báo cáo / Đã gửi cấp trên", diaban:"Số liệu báo cáo / Theo địa bàn", reports:"Số liệu báo cáo / Kỳ báo cáo", report:"Số liệu báo cáo / Kỳ báo cáo", tuyentruyen:"Tuyên truyền", baocaothang:"Số liệu báo cáo / Báo cáo tháng", templates:"Biểu mẫu", tpledit:"Biểu mẫu", settings:"Thông tin cơ quan" };
 
 /* ===================== KỲ BÁO CÁO ===================== */
 function viewReports(){
@@ -4174,7 +4237,7 @@ document.addEventListener("click", async e => {
   const act = b.dataset.act, rep = curRep();
   switch(act){
     case "tt": await ttAct(b); break;
-    case "nav": { tplDraft = null; const v = b.dataset.v === "hub" ? (S.hubLast || "reports") : b.dataset.v; if (v === "tuyentruyen") await ttLoad(); if (v === "phieu") await store.loadYear(S.pY); if (v === "diaban") { if (!S.dv) S.dv = dvInit(); await loadRange(dvR()); } go(v); break; }
+    case "nav": { tplDraft = null; const v = b.dataset.v === "hub" ? (S.hubLast || "baocaothang") : b.dataset.v; if (v === "tuyentruyen") await ttLoad(); if (v === "phieu") await store.loadYear(S.pY); if (v === "diaban") { if (!S.dv) S.dv = dvInit(); await loadRange(dvR()); } go(v); break; }
     case "openrep": { const r = S.reports.find(x => x.id === b.dataset.id); if (r) { repTpl(r); await loadRange(repRange(r)); } go("report", { repId:b.dataset.id, tab:"data" }); break; }
     case "tab": S.tab = b.dataset.v; render(); break;
     case "gophieu": S.pM = +b.dataset.m; S.pY = +b.dataset.y; await store.loadYear(S.pY); S.phMode = "thon"; BT.y = +b.dataset.y; BT.m = +b.dataset.m; btLoad(); go("phieu"); break;
@@ -4260,6 +4323,12 @@ document.addEventListener("click", async e => {
     case "sledsave": slEdSave(); break;
     case "phmode": if (S.phMode !== b.dataset.v && BT.dirty && !await confirmBox("Số trong biểu tháng chưa lưu. Chuyển trang sẽ bỏ các số này?", "Bỏ và chuyển")) break; if (b.dataset.v === "thon") BT.y = null; S.phMode = b.dataset.v; render(); break;
     case "bt-save": btSave(); break;
+    case "bt-gobct": BCT.y = BT.y; BCT.m = BT.m; go("baocaothang"); break;
+    case "bct-m": BCT.m = +b.dataset.m; render(); break;
+    case "bct-thon": BCT.thon = !BCT.thon; render(); break;
+    case "bct-edit": { if (BT.dirty && !await confirmBox("Phiếu đang nhập dở chưa lưu sẽ bị bỏ. Tiếp tục?", "Tiếp tục")) break; S.phMode = "thon"; BT.y = BCT.y; BT.m = BCT.m; btLoad(); go("phieu"); break; }
+    case "bct-xlsx": { const o = b.textContent; b.disabled = true; b.textContent = "Đang tạo…"; try { await bctExport(b.dataset.v); } catch(e){ toast("Không tạo được tệp: " + (e.message || e), true); } b.disabled = false; b.textContent = o; break; }
+    case "bct-rep": bctOpenRep(); break;
     case "bt-paper": BT.paper = !BT.paper; render(); break;
     case "bt-open": { const m = +b.dataset.m; if (m === BT.m) break; if (BT.dirty && !await confirmBox("Số vừa nhập chưa lưu. Chuyển tháng sẽ bỏ các số này?", "Bỏ và chuyển")) break; BT.m = m; btLoad(); render(); document.querySelector(".bt-wrap")?.scrollIntoView({ block:"start", behavior:"smooth" }); break; }
     case "bt-xlsx": { const o = b.textContent; b.disabled = true; b.textContent = "Đang tạo…"; try { await btExportXlsx(false); } catch(e){ toast("Không tạo được tệp: " + (e.message || e), true); } b.disabled = false; b.textContent = o; break; }
